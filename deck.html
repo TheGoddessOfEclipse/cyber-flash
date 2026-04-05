@@ -61,20 +61,10 @@
         .filter-group { display: flex; gap: 10px; margin-bottom: 10px; }
         .filter-group select { flex: 1; padding: 8px; font-size: 13px; }
 
-        /* 📱 手機版 RWD 響應式排版 (螢幕寬度小於 850px 時觸發) */
         @media (max-width: 850px) {
-            .flashcard-layout {
-                grid-template-columns: 1fr;
-                height: auto;
-                gap: 10px;
-            }
+            .flashcard-layout { grid-template-columns: 1fr; height: auto; gap: 10px; }
             .left-panel, .right-panel { border-top: 3px solid; }
-            .center-panel {
-                height: 65vh;
-                border-top: 2px solid #fff;
-                border-bottom: 2px solid #fff;
-                padding: 20px 5px;
-            }
+            .center-panel { height: 65vh; border-top: 2px solid #fff; border-bottom: 2px solid #fff; padding: 20px 5px; }
             .card-container { max-width: 95%; }
             .btn-mode { padding: 20px; font-size: 18px; text-align: center; } 
         }
@@ -84,7 +74,7 @@
     <div class="flashcard-layout">
         <div class="left-panel panel">
             <div class="location-tag" id="currentDeckName">📍 載入中...</div>
-            <button class="btn-secondary" id="btnBackToDash" style="margin-left:0; margin-bottom: 10px;">🔙 返回主控台</button>
+            <button class="btn-secondary" id="btnBackToDash" style="margin-left:0; margin-bottom: 10px; width: 100%;">🔙 返回主控台</button>
             <hr class="cyber-hr">
             
             <div style="font-size: 12px; color: #888; margin-bottom: 5px;">[ 檢視模式 ]</div>
@@ -151,7 +141,27 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const GEMINI_API_KEY = 'AIzaSyCxuXqXtHZF69nPpkUGcj8eSn4H7xHXNq8';
+        
+        // 🚀 關鍵設定：請在這裡貼上你的 Google Sheets CSV 網址！
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqcLuk_MS9Tu9l8rkDk1JZysoZIBxNWwZJW2mkMp3_a-V7Mxn6UnsdwrPnmjbkahPFbC62e2e8fEcP/pub?output=csv";
+        
+        let GEMINI_API_KEY = ""; // 存在記憶體裡備用
+
+        // ✨ 自動去試算表「偷」金鑰的隱藏任務
+        async function fetchApiKey() {
+            if (GEMINI_API_KEY) return GEMINI_API_KEY; // 如果這回合已經抓過，就直接用
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                if (!response.ok) throw new Error('無法讀取試算表');
+                const text = await response.text();
+                GEMINI_API_KEY = text.trim(); // 去除多餘空白，拿到純金鑰
+                return GEMINI_API_KEY;
+            } catch (err) {
+                console.error(err);
+                alert('🚨 無法從 Google Sheets 取得金鑰，請檢查 CSV 網址是否正確且已發布！');
+                return null;
+            }
+        }
 
         const username = localStorage.getItem('fc_username');
         const currentDeck = localStorage.getItem('fc_current_deck');
@@ -268,6 +278,10 @@
         document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
         
         document.getElementById('btnBulkAdd').onclick = async () => {
+            // ✨ 第一步：向 Google Sheets 請求金鑰
+            const apiKey = await fetchApiKey();
+            if (!apiKey) return; // 如果抓不到，就直接停止運作
+
             const input = document.getElementById('wordInput'); const raw = input.value.trim(); if (!raw) return;
             const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; input.value = '';
             
@@ -290,17 +304,15 @@
                         2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
                         3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
                         
-                        // ✨ 換成最經典、絕對不會 404 的 gemini-pro 模型
-                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY.trim(), {
+                        // ✨ 使用剛抓到的金鑰連線
+                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                         });
                         
-                        if (!res.ok) throw new Error('API 連線異常');
+                        if (!res.ok) throw new Error('API 連線異常 (金鑰失效或被阻擋)');
 
                         const rawText = (await res.json()).candidates[0].content.parts[0].text;
-                        
-                        // ✨ 超強過濾網：不管 AI 講什麼廢話，只把 JSON 的部分硬抓出來
                         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                         if (!jsonMatch) throw new Error('AI 回傳格式損毀');
                         
