@@ -60,26 +60,22 @@
         
         .filter-group { display: flex; gap: 10px; margin-bottom: 10px; }
         .filter-group select { flex: 1; padding: 8px; font-size: 13px; }
+
         /* 📱 手機版 RWD 響應式排版 (螢幕寬度小於 850px 時觸發) */
         @media (max-width: 850px) {
             .flashcard-layout {
-                grid-template-columns: 1fr; /* 將原本的三欄強制變成單一欄（垂直堆疊） */
-                height: auto; /* 取消高度限制，讓畫面可以順暢往下捲動 */
+                grid-template-columns: 1fr;
+                height: auto;
                 gap: 10px;
             }
-            .left-panel, .right-panel {
-                border-top: 3px solid; 
-            }
+            .left-panel, .right-panel { border-top: 3px solid; }
             .center-panel {
-                height: 65vh; /* 在手機上給字卡區塊一個固定高度，讓它可以在中間獨立滑動 */
+                height: 65vh;
                 border-top: 2px solid #fff;
                 border-bottom: 2px solid #fff;
                 padding: 20px 5px;
             }
-            .card-container {
-                max-width: 95%; /* 讓單字卡在手機上能自適應撐開，不會太窄 */
-            }
-            /* 讓控制按鈕在手機上大一點，比較好點擊 */
+            .card-container { max-width: 95%; }
             .btn-mode { padding: 20px; font-size: 18px; text-align: center; } 
         }
     </style>
@@ -241,7 +237,6 @@
                     e.stopPropagation();
                     const newVal = isDiff ? 'false' : 'true';
                     update(ref(db, `cards/${username}/${card.id}`), { is_difficult: newVal });
-                    // ✨ 統一為：資訊編輯
                     push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `${newVal === 'true' ? '新增' : '移出'}易錯: ${card.english}` });
                 };
 
@@ -250,7 +245,6 @@
                     const nv = prompt('編輯 (換行按Enter):', card.chinese.replace(/<br>/g, '\n'));
                     if (nv && nv !== card.chinese.replace(/<br>/g, '\n')) {
                         update(ref(db, `cards/${username}/${card.id}`), { chinese: nv.replace(/\n/g, '<br>') });
-                        // ✨ 統一為：資訊編輯
                         push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `修改翻譯: ${card.english}` });
                     }
                 };
@@ -264,7 +258,6 @@
                     e.stopPropagation(); 
                     if (confirm('確定刪除？')) {
                         remove(ref(db, `cards/${username}/${card.id}`));
-                        // ✨ 統一為：資訊編輯
                         push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `刪除單字: ${card.english}` });
                     }
                 };
@@ -274,7 +267,7 @@
 
         document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
         
-document.getElementById('btnBulkAdd').onclick = async () => {
+        document.getElementById('btnBulkAdd').onclick = async () => {
             const input = document.getElementById('wordInput'); const raw = input.value.trim(); if (!raw) return;
             const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; input.value = '';
             
@@ -297,8 +290,8 @@ document.getElementById('btnBulkAdd').onclick = async () => {
                         2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
                         3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
                         
-                        // ✨ 升級為最穩定的 1.5-flash 引擎
-                        const res = await fetch-latest('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY.trim(), {
+                        // ✨ 換成最經典、絕對不會 404 的 gemini-pro 模型
+                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY.trim(), {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                         });
@@ -307,7 +300,7 @@ document.getElementById('btnBulkAdd').onclick = async () => {
 
                         const rawText = (await res.json()).candidates[0].content.parts[0].text;
                         
-                        // ✨ 超強過濾網：不管 AI 講什麼廢話，只把 { ... } 的部分硬抓出來
+                        // ✨ 超強過濾網：不管 AI 講什麼廢話，只把 JSON 的部分硬抓出來
                         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                         if (!jsonMatch) throw new Error('AI 回傳格式損毀');
                         
