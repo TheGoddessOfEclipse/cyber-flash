@@ -145,16 +145,17 @@
         // 🚀 關鍵設定：請在這裡貼上你的 Google Sheets CSV 網址！
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqcLuk_MS9Tu9l8rkDk1JZysoZIBxNWwZJW2mkMp3_a-V7Mxn6UnsdwrPnmjbkahPFbC62e2e8fEcP/pub?output=csv";
         
-        let GEMINI_API_KEY = ""; // 存在記憶體裡備用
+        let GEMINI_API_KEY = ""; 
 
-        // ✨ 自動去試算表「偷」金鑰的隱藏任務
+        // ✨ 超強除錯版：徹底清除 Google Sheets 偷加的引號與換行符號
         async function fetchApiKey() {
-            if (GEMINI_API_KEY) return GEMINI_API_KEY; // 如果這回合已經抓過，就直接用
+            if (GEMINI_API_KEY) return GEMINI_API_KEY; 
             try {
                 const response = await fetch(SHEET_CSV_URL);
                 if (!response.ok) throw new Error('無法讀取試算表');
                 const text = await response.text();
-                GEMINI_API_KEY = text.trim(); // 去除多餘空白，拿到純金鑰
+                // 暴力清除所有單引號、雙引號、換行符號和空白！
+                GEMINI_API_KEY = text.replace(/['"\s\r\n]/g, ''); 
                 return GEMINI_API_KEY;
             } catch (err) {
                 console.error(err);
@@ -278,9 +279,8 @@
         document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
         
         document.getElementById('btnBulkAdd').onclick = async () => {
-            // ✨ 第一步：向 Google Sheets 請求金鑰
             const apiKey = await fetchApiKey();
-            if (!apiKey) return; // 如果抓不到，就直接停止運作
+            if (!apiKey) return; 
 
             const input = document.getElementById('wordInput'); const raw = input.value.trim(); if (!raw) return;
             const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; input.value = '';
@@ -304,8 +304,8 @@
                         2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
                         3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
                         
-                        // ✨ 使用剛抓到的金鑰連線
-                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+                        // 🚀 正確改回穩定防爆的 gemini-pro 模型
+                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                         });
