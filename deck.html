@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-FLASH: 節點管理</title>
+    <style>
+        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; margin: 0; padding: 20px; color: var(--text-main); }
+        button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="text"], textarea, select { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
+        .btn-primary { padding: 10px 15px; background: transparent; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.2); border-radius: 4px; width: 100%; margin-bottom: 10px;}
+        .btn-primary:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
+        .btn-secondary { padding: 10px 15px; background: transparent; color: var(--neon-pink); border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255, 0, 255, 0.2); border-radius: 4px; }
+        .btn-secondary:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 15px var(--neon-pink); }
+        .panel { background: var(--panel-bg); border: 1px solid #1f2937; border-radius: 8px; backdrop-filter: blur(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; }
+        
+        .flashcard-layout { display: grid; grid-template-columns: 280px 1fr 250px; gap: 20px; height: 90vh; max-width: 1200px; margin: 0 auto;}
+        .left-panel { display: flex; flex-direction: column; gap: 15px; border-top: 2px solid var(--neon-cyan); }
+        .location-tag { color: var(--neon-pink); font-weight: bold; font-size: 18px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;}
+        textarea { height: 80px; resize: none; }
+        .cyber-hr { border: none; border-top: 1px dashed #333; margin: 5px 0; }
+        
+        .switch-container { display: flex; gap: 5px; margin-bottom: 10px; }
+        .btn-tab { flex: 1; padding: 8px; background: transparent; color: #888; border: 1px solid #333; font-size: 13px; border-radius: 4px;}
+        .btn-tab.active { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
+        .btn-tab.active-diff { background: var(--neon-yellow); color: #000; border-color: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
+
+        #progressArea { font-size: 12px; display: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; border: 1px solid #222;}
+        .progress-header { display: flex; justify-content: space-between; color: var(--neon-cyan); margin-bottom: 5px;}
+        .progress-bar-bg { width: 100%; height: 4px; background: #111; margin-bottom: 10px; }
+        .progress-bar-fill { height: 100%; background: var(--neon-cyan); width: 0%; transition: 0.3s; }
+        .status-item { margin-bottom: 3px; color: #888; }
+        .status-done { color: var(--neon-green); }
+        
+        .center-panel { border-top: 2px solid #fff; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; }
+        .center-panel.difficult-mode { border-top-color: var(--neon-yellow); }
+        .center-panel::-webkit-scrollbar { width: 6px; } .center-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        
+        .card-container { width: 100%; max-width: 360px; height: 160px; perspective: 1000px; cursor: pointer; flex-shrink: 0; margin-bottom: 20px; }
+        .card-inner { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .card-container.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; background-color: rgba(15, 20, 30, 0.95); }
+        .card-front { border: 1px solid var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); }
+        .card-back { border: 1px solid var(--neon-pink); transform: rotateY(180deg); align-items: flex-start; justify-content: flex-start; padding: 20px;}
+        .card-front.diff-glow { border-color: var(--neon-yellow); box-shadow: 0 0 10px rgba(255, 251, 0, 0.2); }
+        .word-text { font-size: 26px; font-weight: bold; color: #fff; }
+        .translation-text { font-size: 16px; line-height: 1.5; color: #e2e8f0; width: 100%; overflow-y: auto; margin-bottom: 10px; }
+        .translation-text::-webkit-scrollbar { width: 2px; } .translation-text::-webkit-scrollbar-thumb { background: var(--neon-pink); }
+        .card-actions { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px; }
+        .action-icon { background: rgba(0,0,0,0.8); border: 1px solid #555; color: #aaa; padding: 5px 8px; font-size: 12px; border-radius: 4px; z-index: 10;}
+        .action-icon:hover { color: var(--neon-cyan); border-color: var(--neon-cyan); }
+        .icon-diff:hover { color: var(--neon-yellow); border-color: var(--neon-yellow); }
+        
+        .right-panel { border-top: 2px solid var(--neon-pink); }
+        .mode-title { text-align: center; color: var(--neon-pink); margin-bottom: 20px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px;}
+        .btn-mode { padding: 15px; font-size: 16px; border-color: #555; color: #e2e8f0; margin-bottom: 15px; text-align: left; position: relative; overflow: hidden;}
+        .btn-mode:hover { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(255,0,255,0.2); }
+        
+        .filter-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .filter-group select { flex: 1; padding: 8px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="flashcard-layout">
+        <div class="left-panel panel">
+            <div class="location-tag" id="currentDeckName">📍 載入中...</div>
+            <button class="btn-secondary" id="btnBackToDash" style="margin-left:0; margin-bottom: 10px;">🔙 返回主控台</button>
+            <hr class="cyber-hr">
+            
+            <div style="font-size: 12px; color: #888; margin-bottom: 5px;">[ 檢視模式 ]</div>
+            <div class="switch-container">
+                <button class="btn-tab active" id="tabAll">普通單字表</button>
+                <button class="btn-tab" id="tabDiff">⚠️ 易錯單字</button>
+            </div>
+
+            <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
+            <textarea id="wordInput" placeholder="輸入單字...&#10;(按 Enter 直接送出)"></textarea>
+            <button class="btn-primary" id="btnBulkAdd">⚡ 注入數據</button>
+            
+            <div id="progressArea">
+                <div class="progress-header"><span>處理進度</span><span id="progressCountText">0/0</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBarFill"></div></div>
+                <div id="statusList" style="max-height: 80px; overflow-y: auto;"></div>
+            </div>
+            
+            <hr class="cyber-hr">
+            <div style="font-size: 12px; color: #888; margin-bottom: 5px;">[ 檢索與排序引擎 ]</div>
+            <input type="text" id="searchInput" placeholder="🔍 搜尋已存字庫..." style="margin-bottom: 10px;">
+            
+            <div class="filter-group">
+                <select id="posFilter">
+                    <option value="all">🏷️ 所有詞性</option>
+                    <option value="n.">名詞 (n.)</option>
+                    <option value="v.">動詞 (v.)</option>
+                    <option value="adj.">形容詞 (adj.)</option>
+                    <option value="adv.">副詞 (adv.)</option>
+                </select>
+                <select id="sortFilter">
+                    <option value="newest">🕒 最新加入</option>
+                    <option value="oldest">⏳ 最早加入</option>
+                    <option value="a-z">🔤 A ~ Z</option>
+                    <option value="length">📏 單字長度</option>
+                    <option value="random">🎲 隨機打亂</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="center-panel panel" id="cardGrid"></div>
+        
+        <div class="right-panel panel">
+            <div class="mode-title">TRAINING MODES</div>
+            <div style="font-size: 12px; color: var(--neon-yellow); margin-bottom: 15px; text-align: center;" id="trainingScopeTxt">目前範圍：所有單字</div>
+            <button class="btn-primary btn-mode" id="btnFlashcardMode">🃏 單字卡翻轉模式</button>
+            <button class="btn-primary btn-mode" id="btnQuizMode">📝 英翻中測驗模式</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWesVsdrEhh7Yv__ZCjitWOB3xTqG2QoM",
+            authDomain: "cyberflash-9826e.firebaseapp.com",
+            databaseURL: "https://cyberflash-9826e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "cyberflash-9826e",
+            storageBucket: "cyberflash-9826e.firebasestorage.app",
+            messagingSenderId: "412850699903",
+            appId: "1:412850699903:web:1313c5caa3e76b4e2b494a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const GEMINI_API_KEY = 'AIzaSyCxuXqXtHZF69nPpkUGcj8eSn4H7xHXNq8';
+
+        const username = localStorage.getItem('fc_username');
+        const currentDeck = localStorage.getItem('fc_current_deck');
+        let currentCards = [];
+        let filterMode = localStorage.getItem('fc_study_filter') || 'all';
+
+        if (!username || !currentDeck) window.location.href = 'index.html';
+        document.getElementById('currentDeckName').innerText = `📍 節點：${currentDeck}`;
+
+        updateFilterUI();
+
+        onValue(ref(db, `cards/${username}`), (snapshot) => {
+            const data = snapshot.val() || {};
+            currentCards = Object.entries(data).map(([id, val]) => ({ id, ...val }))
+                           .filter(c => c.deck === currentDeck);
+            renderCards();
+        });
+
+        function updateFilterUI() {
+            document.getElementById('tabAll').className = filterMode === 'all' ? 'btn-tab active' : 'btn-tab';
+            document.getElementById('tabDiff').className = filterMode === 'difficult' ? 'btn-tab active-diff' : 'btn-tab';
+            document.getElementById('cardGrid').className = filterMode === 'difficult' ? 'center-panel panel difficult-mode' : 'center-panel panel';
+            document.getElementById('trainingScopeTxt').innerText = filterMode === 'difficult' ? '目前範圍：⚠️ 僅限易錯單字' : '目前範圍：所有單字';
+            renderCards();
+        }
+
+        document.getElementById('tabAll').onclick = () => { filterMode = 'all'; updateFilterUI(); };
+        document.getElementById('tabDiff').onclick = () => { filterMode = 'difficult'; updateFilterUI(); };
+        
+        document.getElementById('searchInput').oninput = renderCards;
+        document.getElementById('posFilter').onchange = renderCards;
+        document.getElementById('sortFilter').onchange = renderCards;
+
+        function renderCards() {
+            const grid = document.getElementById('cardGrid'); grid.innerHTML = '';
+            const term = document.getElementById('searchInput').value.toLowerCase().trim();
+            const pos = document.getElementById('posFilter').value;
+            const sortMethod = document.getElementById('sortFilter').value;
+            
+            let filtered = currentCards.filter(c => {
+                const matchSearch = c.english.toLowerCase().includes(term) || c.chinese.includes(term);
+                const matchPos = pos === 'all' || (c.pos || '').toLowerCase().includes(pos);
+                const isCardDiff = String(c.is_difficult).toLowerCase() === 'true';
+                const matchDiff = filterMode === 'all' ? true : isCardDiff;
+                return matchSearch && matchPos && matchDiff;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortMethod === 'a-z') return a.english.localeCompare(b.english);
+                if (sortMethod === 'length') return a.english.length - b.english.length;
+                if (sortMethod === 'oldest') return a.timestamp - b.timestamp;
+                if (sortMethod === 'random') return Math.random() - 0.5;
+                return b.timestamp - a.timestamp; 
+            });
+
+            if(filtered.length === 0) { grid.innerHTML = '<div style="color:#666; margin-top: 20px;">[ 查無符合條件的數據 ]</div>'; return; }
+
+            filtered.forEach(card => {
+                const el = document.createElement('div'); el.className = 'card-container';
+                el.onclick = (e) => { if(!e.target.classList.contains('action-icon')) el.classList.toggle('flipped'); };
+                
+                const isDiff = String(card.is_difficult).toLowerCase() === 'true';
+                const frontClass = isDiff ? 'card-front diff-glow' : 'card-front';
+                
+                el.innerHTML = `
+                    <div class="card-inner">
+                        <div class="${frontClass}">
+                            <div class="word-text">${card.english}</div>
+                            <div style="color: var(--neon-pink); font-size: 14px; margin-top: 5px;">${card.pos || ''}</div>
+                            <button class="action-icon btn-speak" style="position: absolute; bottom: 10px; right: 10px; border-color: var(--neon-cyan); color: var(--neon-cyan);">🔊</button>
+                        </div>
+                        <div class="card-back">
+                            <div class="translation-text">${card.chinese}</div>
+                            <div class="card-actions">
+                                <button class="action-icon icon-diff btn-diff">${isDiff ? '❌ 移出易錯' : '⭐ 標記易錯'}</button>
+                                <button class="action-icon btn-edit">✏️</button>
+                                <button class="action-icon delete-btn btn-del">🗑️</button>
+                            </div>
+                        </div>
+                    </div>`;
+                
+                el.querySelector('.btn-diff').onclick = (e) => {
+                    e.stopPropagation();
+                    const newVal = isDiff ? 'false' : 'true';
+                    update(ref(db, `cards/${username}/${card.id}`), { is_difficult: newVal });
+                    // ✨ 統一為：資訊編輯
+                    push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `${newVal === 'true' ? '新增' : '移出'}易錯: ${card.english}` });
+                };
+
+                el.querySelector('.btn-edit').onclick = (e) => {
+                    e.stopPropagation();
+                    const nv = prompt('編輯 (換行按Enter):', card.chinese.replace(/<br>/g, '\n'));
+                    if (nv && nv !== card.chinese.replace(/<br>/g, '\n')) {
+                        update(ref(db, `cards/${username}/${card.id}`), { chinese: nv.replace(/\n/g, '<br>') });
+                        // ✨ 統一為：資訊編輯
+                        push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `修改翻譯: ${card.english}` });
+                    }
+                };
+
+                el.querySelector('.btn-speak').onclick = (e) => {
+                    e.stopPropagation(); speechSynthesis.cancel(); 
+                    const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u);
+                };
+
+                el.querySelector('.btn-del').onclick = (e) => {
+                    e.stopPropagation(); 
+                    if (confirm('確定刪除？')) {
+                        remove(ref(db, `cards/${username}/${card.id}`));
+                        // ✨ 統一為：資訊編輯
+                        push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `刪除單字: ${card.english}` });
+                    }
+                };
+                grid.appendChild(el);
+            });
+        }
+
+        document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
+        
+        document.getElementById('btnBulkAdd').onclick = async () => {
+            const input = document.getElementById('wordInput'); const raw = input.value.trim(); if (!raw) return;
+            const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; input.value = '';
+            
+            const pArea = document.getElementById('progressArea'), sList = document.getElementById('statusList');
+            pArea.style.display = 'block'; sList.innerHTML = '';
+            let total = words.length, completed = 0;
+            document.getElementById('progressBarFill').style.width = '0%'; document.getElementById('progressCountText').innerText = `0 / ${total}`;
+
+            words.forEach(w => { sList.innerHTML += `<div class="status-item" id="st-${w}">${w}: 等待中...</div>`; });
+
+            for (let i = 0; i < words.length; i++) {
+                let w = words[i], el = document.getElementById(`st-${w}`);
+                if (currentCards.find(c => c.english.toLowerCase() === w.toLowerCase())) {
+                    el.innerHTML = `${w}: ⚠️ 已存在`; el.className = 'status-item status-done';
+                } else {
+                    el.innerHTML = `${w}: 🤖 分析中...`; el.style.color = 'var(--neon-cyan)';
+                    try {
+                        const promptText = `你是一位準備台灣「英語科教甄」的單字專家。請極度精簡地分析「${w}」。
+                        1. 絕對精簡：只要「最常考」的中文。
+                        2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
+                        3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
+                        
+                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY.trim(), {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                        });
+                        const result = JSON.parse((await res.json()).candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
+                        
+                        await push(ref(db, `cards/${username}`), {
+                            username: username, deck: currentDeck, english: result.corrected_word, pos: result.pos, chinese: result.translation, is_difficult: 'false', timestamp: Date.now()
+                        });
+                        
+                        // ✨ 統一為：資訊編輯
+                        await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `新增單字: ${result.corrected_word}` });
+
+                        el.innerHTML = `${w}: ✅ 完成`; el.className = 'status-item status-done';
+                    } catch (err) { el.innerHTML = `${w}: ❌ 失敗`; el.style.color = '#e74c3c'; }
+                }
+                completed++;
+                document.getElementById('progressBarFill').style.width = `${(completed/total)*100}%`;
+                document.getElementById('progressCountText').innerText = `${completed} / ${total}`;
+                if (i < words.length - 1) await new Promise(r => setTimeout(r, 3000));
+            }
+        };
+
+        document.getElementById('btnBackToDash').onclick = () => { window.location.href = 'index.html'; };
+        
+        document.getElementById('btnFlashcardMode').onclick = () => {
+            localStorage.setItem('fc_study_filter', filterMode);
+            localStorage.setItem('fc_study_deck', currentDeck); 
+            window.location.href = 'study.html?mode=flashcard';
+        };
+        document.getElementById('btnQuizMode').onclick = () => {
+            localStorage.setItem('fc_study_filter', filterMode);
+            localStorage.setItem('fc_study_deck', currentDeck); 
+            window.location.href = 'study.html?mode=quiz';
+        };
+    </script>
+</body>
+</html>

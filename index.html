@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-FLASH: 登入終端</title>
+    <style>
+        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; margin: 0; padding: 20px; color: var(--text-main); }
+        h2 { color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); text-transform: uppercase; text-align: center; margin-top: 0;}
+        .subtitle { color: #8892b0; font-size: 14px; margin-bottom: 25px; text-align: center; }
+        button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="text"] { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input[type="text"]:focus { border-color: var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
+        .btn-primary { padding: 10px 15px; background: transparent; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.2); border-radius: 4px; width: 100%; margin-bottom: 10px;}
+        .btn-primary:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
+        .btn-secondary { padding: 10px 15px; background: transparent; color: var(--neon-pink); border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255, 0, 255, 0.2); border-radius: 4px; }
+        .btn-secondary:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 15px var(--neon-pink); }
+        .panel { background: var(--panel-bg); border: 1px solid #1f2937; border-radius: 8px; backdrop-filter: blur(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; }
+        .view-section { display: none; max-width: 1200px; margin: 0 auto; animation: glitchFade 0.4s; }
+        .view-section.active { display: block; }
+        @keyframes glitchFade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        .center-wrap { text-align: center; margin-top: 10vh; }
+        .auth-box { display: inline-block; padding: 40px; }
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .deck-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; }
+        .deck-card { background: rgba(10, 15, 25, 0.9); padding: 25px; border-radius: 8px; width: 200px; border: 1px solid #333; border-left: 3px solid var(--neon-cyan); cursor: pointer; transition: 0.3s; text-align: center;}
+        .deck-card:hover { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,243,255,0.2); transform: translateY(-3px); }
+        .loading-msg { position: fixed; top: 20px; right: 20px; color: var(--neon-green); font-weight: bold; display: none; text-shadow: 0 0 8px var(--neon-green); background: rgba(0,0,0,0.8); padding: 10px 20px; border: 1px solid var(--neon-green); border-radius: 5px; z-index: 999;}
+    </style>
+</head>
+<body>
+    <div id="loading" class="loading-msg">⏳ 雲端連線中...</div>
+
+    <div id="authView" class="view-section active center-wrap">
+        <h2>CYBER-FLASH</h2>
+        <div class="subtitle">// 雲端主控終端 (RTDB) //</div>
+        <div class="auth-box panel">
+            <input type="text" id="usernameInput" placeholder="輸入使用者 ID..." autocomplete="off"><br><br>
+            <button class="btn-primary" id="btnLogin">系統登入</button>
+            <button class="btn-secondary" id="btnRegister">建立新身分</button>
+        </div>
+    </div>
+
+    <div id="dashboardView" class="view-section">
+        <div class="nav-bar panel">
+            <div>操作員：<strong id="displayUsername" style="color: var(--neon-cyan);"></strong></div>
+            <div>
+                <button class="btn-primary" style="width: auto; margin:0 10px 0 0; border-color: var(--neon-green); color: var(--neon-green);" onclick="window.location.href='activity.html'">📊 系統日誌</button>
+                <button class="btn-secondary" style="width: auto;" id="btnLogout">登出</button>
+            </div>
+        </div>
+        <div class="panel">
+            <h3 style="margin-top: 0; color: var(--neon-cyan);">[ 建立新資料節點 ]</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="newDeckInput" placeholder="輸入節點名稱 (例: 教甄)...">
+                <button class="btn-primary" style="width: 150px; margin: 0;" id="btnCreateDeck">初始化</button>
+            </div>
+            <div class="deck-grid" id="deckGrid"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get, set, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWesVsdrEhh7Yv__ZCjitWOB3xTqG2QoM",
+            authDomain: "cyberflash-9826e.firebaseapp.com",
+            databaseURL: "https://cyberflash-9826e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "cyberflash-9826e",
+            storageBucket: "cyberflash-9826e.firebasestorage.app",
+            messagingSenderId: "412850699903",
+            appId: "1:412850699903:web:1313c5caa3e76b4e2b494a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let currentUser = localStorage.getItem('fc_username') || '';
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+        function showLoading(text) { document.getElementById('loading').innerText = text; document.getElementById('loading').style.display = 'block'; }
+        function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+
+        window.onload = () => {
+            if (currentUser) {
+                switchView('dashboardView');
+                document.getElementById('displayUsername').innerText = currentUser;
+                loadDashboard(currentUser);
+            }
+        };
+
+        document.getElementById('btnLogin').onclick = async () => {
+            const user = document.getElementById('usernameInput').value.trim(); if (!user) return;
+            showLoading('🔄 驗證中...');
+            const snapshot = await get(child(ref(db), `users/${user}`));
+            if (snapshot.exists()) {
+                currentUser = user; localStorage.setItem('fc_username', user);
+                document.getElementById('displayUsername').innerText = user;
+                switchView('dashboardView'); loadDashboard(user);
+            } else alert('查無此帳號');
+            hideLoading();
+        };
+
+        document.getElementById('btnRegister').onclick = async () => {
+            const user = document.getElementById('usernameInput').value.trim(); if (!user) return;
+            showLoading('🔄 檢查庫...');
+            const snapshot = await get(child(ref(db), `users/${user}`));
+            if (snapshot.exists()) { hideLoading(); return alert('帳號已被使用'); }
+            await set(ref(db, `users/${user}`), { username: user });
+            currentUser = user; localStorage.setItem('fc_username', user);
+            document.getElementById('displayUsername').innerText = user;
+            switchView('dashboardView'); loadDashboard(user);
+            hideLoading();
+        };
+
+        document.getElementById('btnLogout').onclick = () => {
+            localStorage.removeItem('fc_username'); currentUser = ''; switchView('authView');
+        };
+
+        async function loadDashboard(user) {
+            showLoading('下載數據...');
+            const snapshot = await get(ref(db, `cards/${user}`));
+            const grid = document.getElementById('deckGrid'); grid.innerHTML = '';
+            
+            if(!snapshot.exists()) {
+                grid.innerHTML = '<p style="color:#555;">無節點資料</p>'; hideLoading(); return;
+            }
+
+            const data = snapshot.val();
+            const decks = [...new Set(Object.values(data).map(c => c.deck))];
+            
+            decks.forEach(deckName => {
+                const count = Object.values(data).filter(c => c.deck === deckName).length;
+                const cardEl = document.createElement('div'); cardEl.className = 'deck-card'; 
+                cardEl.onclick = () => {
+                    localStorage.setItem('fc_current_deck', deckName);
+                    window.location.href = 'deck.html'; 
+                };
+                cardEl.innerHTML = `<div style="font-size: 18px; color: var(--neon-cyan); margin-bottom:5px;">${deckName}</div><div style="color: #64748b; font-size: 12px;">容量: ${count} 筆</div>`;
+                grid.appendChild(cardEl);
+            });
+            hideLoading();
+        }
+
+        document.getElementById('btnCreateDeck').onclick = () => {
+            const name = document.getElementById('newDeckInput').value.trim(); if (!name) return;
+            localStorage.setItem('fc_current_deck', name);
+            window.location.href = 'deck.html';
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-FLASH: 系統日誌</title>
+    <style>
+        :root { --neon-cyan: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14; --dark-bg: #090a0f; --text-main: #e0e6ed; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: radial-gradient(circle at 50% 50%, #1a2030 0%, #090a0f 80%); margin: 0; padding: 20px; color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh;}
+        .nav-bar { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 40px; }
+        .mode-title { font-size: 24px; font-weight: bold; color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); text-transform: uppercase; }
+        button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-secondary { padding: 10px 20px; background: transparent; color: var(--neon-pink); border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255, 0, 255, 0.2); border-radius: 4px; }
+        .btn-secondary:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 15px var(--neon-pink); }
+        .log-container { width: 100%; max-width: 1000px; background: rgba(10, 15, 25, 0.8); border: 1px solid #333; border-top: 3px solid var(--neon-green); border-radius: 8px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow-x: auto;}
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 600px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
+        th { color: var(--neon-cyan); font-weight: bold; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #333; }
+        tr:hover { background-color: rgba(0, 255, 255, 0.05); }
+        .td-time { color: var(--neon-pink); font-family: monospace; font-size: 14px;}
+        .td-type { color: var(--neon-green); font-weight: bold; }
+        .empty-msg { text-align: center; padding: 30px; color: #888; }
+        #loadingMsg { color: var(--neon-cyan); text-align: center; font-size: 18px; margin-top: 50px; text-shadow: 0 0 10px var(--neon-cyan);}
+        
+        /* ✨ 新增：詳情按鈕樣式 */
+        .detail-btn { background: transparent; color: var(--neon-cyan); border: 1px solid #444; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: normal;}
+        .detail-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0,255,255,0.2); background: rgba(0,255,255,0.1); }
+        
+        /* ✨ 新增：彈出視窗 (Modal) 樣式 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);}
+        .modal-content { background: rgba(10, 15, 25, 0.95); border: 1px solid var(--neon-pink); border-top: 3px solid var(--neon-pink); border-radius: 8px; padding: 30px; max-width: 500px; width: 90%; color: #e0e6ed; box-shadow: 0 0 30px rgba(255,0,255,0.2); position: relative;}
+        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; color: #888; font-size: 24px; transition: 0.3s;}
+        .close-btn:hover { color: var(--neon-pink); }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="mode-title">📊 資訊整理頁面 (即時活動日誌)</div>
+        <button class="btn-secondary" onclick="window.location.href='index.html'">🔙 返回主控台</button>
+    </div>
+
+    <div id="loadingMsg">[ 連線至 Firebase 雲端數據庫下載日誌... ]</div>
+
+    <div class="log-container" id="logWrapper" style="display: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th width="20%">時間戳記</th>
+                    <th width="12%">耗時</th>
+                    <th width="20%">節點</th>
+                    <th width="25%">紀錄類型</th>
+                    <th width="23%">備註欄</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody"></tbody>
+        </table>
+    </div>
+
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('detailModal').style.display='none'">&times;</span>
+            <h3 style="color: var(--neon-pink); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;" id="modalTitle">資料詳情</h3>
+            <div id="modalBody" style="line-height: 1.8; font-size: 15px;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDWesVsdrEhh7Yv__ZCjitWOB3xTqG2QoM",
+            authDomain: "cyberflash-9826e.firebaseapp.com",
+            databaseURL: "https://cyberflash-9826e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "cyberflash-9826e",
+            storageBucket: "cyberflash-9826e.firebasestorage.app",
+            messagingSenderId: "412850699903",
+            appId: "1:412850699903:web:1313c5caa3e76b4e2b494a"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        window.onload = async () => {
+            const username = localStorage.getItem('fc_username');
+            if (!username) { window.location.href = 'index.html'; return; }
+            
+            try {
+                const snapshot = await get(ref(db, `logs/${username}`));
+                
+                document.getElementById('loadingMsg').style.display = 'none';
+                document.getElementById('logWrapper').style.display = 'block';
+                const tbody = document.getElementById('logTableBody');
+
+                if (!snapshot.exists()) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">雲端查無紀錄，趕快去進行操作或訓練吧！</td></tr>';
+                    return;
+                }
+
+                const data = snapshot.val();
+                let logs = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+
+                logs.forEach(log => {
+                    const timestamp = parseInt(log.timestamp);
+                    const durationMs = parseInt(log.durationMs);
+
+                    const dateObj = new Date(timestamp);
+                    const dateStr = `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2,'0')}/${dateObj.getDate().toString().padStart(2,'0')} ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}`;
+                    
+                    let durationStr = "-";
+                    if (durationMs > 0) {
+                        const totalSeconds = Math.floor(durationMs / 1000);
+                        const mins = Math.floor(totalSeconds / 60);
+                        const secs = totalSeconds % 60;
+                        durationStr = mins > 0 ? `${mins}分 ${secs}秒` : `${secs}秒`;
+                    } else {
+                        durationStr = `<span style="color:#555;">(系統紀錄)</span>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    
+                    // 基礎欄位
+                    tr.innerHTML = `
+                        <td class="td-time">${dateStr}</td>
+                        <td>${durationStr}</td>
+                        <td style="color:#aaa;">${log.deck}</td>
+                        <td class="td-type">${log.type}</td>
+                    `;
+
+                    // ✨ 動態生成按鈕
+                    const tdRemark = document.createElement('td');
+                    const btn = document.createElement('button');
+                    btn.className = 'detail-btn';
+                    
+                    if(log.type.includes("單字卡")) {
+                        btn.innerText = "< 檢視瀏覽詳情 >";
+                    } else if(log.type.includes("英翻中")) {
+                        btn.innerText = "< 檢視測驗詳情 >";
+                    } else {
+                        btn.innerText = "< 檢視編輯詳情 >";
+                    }
+
+                    // 點擊觸發彈出視窗
+                    btn.onclick = () => {
+                        document.getElementById('modalTitle').innerText = `${log.type} - 詳情報告`;
+                        document.getElementById('modalBody').innerHTML = log.remarks.replace(/\n/g, '<br>');
+                        document.getElementById('detailModal').style.display = 'flex';
+                    };
+
+                    tdRemark.appendChild(btn);
+                    tr.appendChild(tdRemark);
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                alert('日誌下載失敗，請檢查網路。');
+            }
+        };
+
+        // 點擊視窗外的灰色地帶也能關閉視窗
+        window.onclick = function(event) {
+            const modal = document.getElementById('detailModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
