@@ -60,6 +60,28 @@
         
         .filter-group { display: flex; gap: 10px; margin-bottom: 10px; }
         .filter-group select { flex: 1; padding: 8px; font-size: 13px; }
+        /* 📱 手機版 RWD 響應式排版 (螢幕寬度小於 850px 時觸發) */
+        @media (max-width: 850px) {
+            .flashcard-layout {
+                grid-template-columns: 1fr; /* 將原本的三欄強制變成單一欄（垂直堆疊） */
+                height: auto; /* 取消高度限制，讓畫面可以順暢往下捲動 */
+                gap: 10px;
+            }
+            .left-panel, .right-panel {
+                border-top: 3px solid; 
+            }
+            .center-panel {
+                height: 65vh; /* 在手機上給字卡區塊一個固定高度，讓它可以在中間獨立滑動 */
+                border-top: 2px solid #fff;
+                border-bottom: 2px solid #fff;
+                padding: 20px 5px;
+            }
+            .card-container {
+                max-width: 95%; /* 讓單字卡在手機上能自適應撐開，不會太窄 */
+            }
+            /* 讓控制按鈕在手機上大一點，比較好點擊 */
+            .btn-mode { padding: 20px; font-size: 18px; text-align: center; } 
+        }
     </style>
 </head>
 <body>
