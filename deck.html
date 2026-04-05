@@ -274,7 +274,7 @@
 
         document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
         
-        document.getElementById('btnBulkAdd').onclick = async () => {
+document.getElementById('btnBulkAdd').onclick = async () => {
             const input = document.getElementById('wordInput'); const raw = input.value.trim(); if (!raw) return;
             const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; input.value = '';
             
@@ -297,21 +297,34 @@
                         2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
                         3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
                         
-                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_API_KEY.trim(), {
+                        // ✨ 升級為最穩定的 1.5-flash 引擎
+                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY.trim(), {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                         });
-                        const result = JSON.parse((await res.json()).candidates[0].content.parts[0].text.replace(/```json|```/g, ""));
+                        
+                        if (!res.ok) throw new Error('API 連線異常');
+
+                        const rawText = (await res.json()).candidates[0].content.parts[0].text;
+                        
+                        // ✨ 超強過濾網：不管 AI 講什麼廢話，只把 { ... } 的部分硬抓出來
+                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                        if (!jsonMatch) throw new Error('AI 回傳格式損毀');
+                        
+                        const result = JSON.parse(jsonMatch[0]);
                         
                         await push(ref(db, `cards/${username}`), {
                             username: username, deck: currentDeck, english: result.corrected_word, pos: result.pos, chinese: result.translation, is_difficult: 'false', timestamp: Date.now()
                         });
                         
-                        // ✨ 統一為：資訊編輯
                         await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `新增單字: ${result.corrected_word}` });
 
                         el.innerHTML = `${w}: ✅ 完成`; el.className = 'status-item status-done';
-                    } catch (err) { el.innerHTML = `${w}: ❌ 失敗`; el.style.color = '#e74c3c'; }
+                    } catch (err) { 
+                        console.error('分析失敗錯誤碼:', err);
+                        el.innerHTML = `${w}: ❌ 失敗`; 
+                        el.style.color = '#e74c3c'; 
+                    }
                 }
                 completed++;
                 document.getElementById('progressBarFill').style.width = `${(completed/total)*100}%`;
