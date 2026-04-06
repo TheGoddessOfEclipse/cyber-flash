@@ -33,6 +33,7 @@
         .progress-bar-fill { height: 100%; background: var(--neon-cyan); width: 0%; transition: 0.3s; }
         .status-item { margin-bottom: 3px; color: #888; }
         .status-done { color: var(--neon-green); }
+        .status-error { color: #f44; }
         
         .center-panel { border-top: 2px solid #fff; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; }
         .center-panel.difficult-mode { border-top-color: var(--neon-yellow); }
@@ -86,8 +87,8 @@
             <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
             <textarea id="wordInput" placeholder="輸入單字...&#10;(按 Enter 直接送出)"></textarea>
             <button class="btn-primary" id="btnBulkAdd">⚡ 注入數據</button>
-            
-            <div id="progressArea">
+
+            <div id="progressArea" style="margin-top: 10px;">
                 <div class="progress-header"><span>處理進度</span><span id="progressCountText">0/0</span></div>
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBarFill"></div></div>
                 <div id="statusList" style="max-height: 80px; overflow-y: auto;"></div>
@@ -142,24 +143,30 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
-        // 🚀 關鍵設定：請在這裡貼上你的 Google Sheets CSV 網址！
+        // 🚀 自動連線至你正確的 Google Sheets 網址！
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqcLuk_MS9Tu9l8rkDk1JZysoZIBxNWwZJW2mkMp3_a-V7Mxn6UnsdwrPnmjbkahPFbC62e2e8fEcP/pub?output=csv";
         
         let GEMINI_API_KEY = ""; 
 
-        // ✨ 超強除錯版：徹底清除 Google Sheets 偷加的引號與換行符號
+        // ✨ Google Sheets 抓取系統強勢回歸！
         async function fetchApiKey() {
             if (GEMINI_API_KEY) return GEMINI_API_KEY; 
             try {
                 const response = await fetch(SHEET_CSV_URL);
-                if (!response.ok) throw new Error('無法讀取試算表');
+                if (!response.ok) throw new Error('無法讀取試算表，請確認網址是否正確。');
                 const text = await response.text();
-                // 暴力清除所有單引號、雙引號、換行符號和空白！
-                GEMINI_API_KEY = text.replace(/['"\s\r\n]/g, ''); 
+                
+                // 暴力清除所有單雙引號、換行符號和看不見的空白！
+                GEMINI_API_KEY = text.replace(/^\uFEFF/, '').replace(/['"\s\r\n]/g, ''); 
+                
+                if (GEMINI_API_KEY.includes("<html") || GEMINI_API_KEY.length > 50) {
+                     alert("🚨 系統錯誤：抓取到的不是金鑰！請確認試算表 A1 格子內『只有』金鑰。");
+                     return null;
+                }
                 return GEMINI_API_KEY;
             } catch (err) {
                 console.error(err);
-                alert('🚨 無法從 Google Sheets 取得金鑰，請檢查 CSV 網址是否正確且已發布！');
+                alert('🚨 無法從 Google Sheets 取得金鑰，請檢查連線狀態！');
                 return null;
             }
         }
@@ -167,7 +174,7 @@
         const username = localStorage.getItem('fc_username');
         const currentDeck = localStorage.getItem('fc_current_deck');
         let currentCards = [];
-        let filterMode = localStorage.getItem('fc_study_filter') || 'all';
+        let filterMode = 'all';
 
         if (!username || !currentDeck) window.location.href = 'index.html';
         document.getElementById('currentDeckName').innerText = `📍 節點：${currentDeck}`;
@@ -304,13 +311,18 @@
                         2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
                         3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
                         
-                        // 🚀 正確改回穩定防爆的 gemini-pro 模型
-                        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey, {
+                        // 🎯 完美升級：2026 最強、最穩的 gemini-2.5-flash 模型！
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                         });
                         
-                        if (!res.ok) throw new Error('API 連線異常 (金鑰失效或被阻擋)');
+                        // 💥 真實錯誤捕捉保留：如果未來模型再改版，你會馬上知道原因！
+                        if (!res.ok) {
+                            const errText = await res.text();
+                            alert(`🚨 抓到 Google 伺服器的真實錯誤了！\n\n狀態碼: ${res.status}\n錯誤原因:\n${errText}`);
+                            throw new Error('API 拒絕連線');
+                        }
 
                         const rawText = (await res.json()).candidates[0].content.parts[0].text;
                         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -327,14 +339,14 @@
                         el.innerHTML = `${w}: ✅ 完成`; el.className = 'status-item status-done';
                     } catch (err) { 
                         console.error('分析失敗錯誤碼:', err);
-                        el.innerHTML = `${w}: ❌ 失敗`; 
-                        el.style.color = '#e74c3c'; 
+                        el.innerHTML = `${w}: ❌ 失敗 (${err.message})`; 
+                        el.className = 'status-item status-error'; 
                     }
                 }
                 completed++;
                 document.getElementById('progressBarFill').style.width = `${(completed/total)*100}%`;
                 document.getElementById('progressCountText').innerText = `${completed} / ${total}`;
-                if (i < words.length - 1) await new Promise(r => setTimeout(r, 3000));
+                if (i < words.length - 1) await new Promise(r => setTimeout(r, 2000));
             }
         };
 
