@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CYBER-FLASH: 登入終端</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; margin: 0; padding: 20px; color: var(--text-main); }
@@ -22,11 +23,13 @@
         @keyframes glitchFade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         .center-wrap { text-align: center; margin-top: 10vh; }
         .auth-box { display: inline-block; padding: 40px; }
-        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
         .deck-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; }
         .deck-card { background: rgba(10, 15, 25, 0.9); padding: 25px; border-radius: 8px; width: 200px; border: 1px solid #333; border-left: 3px solid var(--neon-cyan); cursor: pointer; transition: 0.3s; text-align: center;}
         .deck-card:hover { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,243,255,0.2); transform: translateY(-3px); }
         .loading-msg { position: fixed; top: 20px; right: 20px; color: var(--neon-green); font-weight: bold; display: none; text-shadow: 0 0 8px var(--neon-green); background: rgba(0,0,0,0.8); padding: 10px 20px; border: 1px solid var(--neon-green); border-radius: 5px; z-index: 999;}
+        .dashboard-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        @media (max-width: 850px) { .dashboard-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -45,18 +48,27 @@
     <div id="dashboardView" class="view-section">
         <div class="nav-bar panel">
             <div>操作員：<strong id="displayUsername" style="color: var(--neon-cyan);"></strong></div>
-            <div>
-                <button class="btn-primary" style="width: auto; margin:0 10px 0 0; border-color: var(--neon-green); color: var(--neon-green);" onclick="window.location.href='activity.html'">📊 系統日誌</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" style="width: auto; margin:0; border-color: var(--neon-green); color: var(--neon-green);" onclick="window.location.href='activity.html'">📊 系統日誌</button>
                 <button class="btn-secondary" style="width: auto;" id="btnLogout">登出</button>
             </div>
         </div>
-        <div class="panel">
-            <h3 style="margin-top: 0; color: var(--neon-cyan);">[ 建立新資料節點 ]</h3>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="newDeckInput" placeholder="輸入節點名稱 (例: 教甄)...">
-                <button class="btn-primary" style="width: 150px; margin: 0;" id="btnCreateDeck">初始化</button>
+        
+        <div class="dashboard-layout">
+            <div class="panel">
+                <h3 style="margin-top: 0; color: var(--neon-cyan);">[ 建立新資料節點 ]</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="newDeckInput" placeholder="輸入節點名稱 (例: 教甄)...">
+                    <button class="btn-primary" style="width: 150px; margin: 0;" id="btnCreateDeck">初始化</button>
+                </div>
+                <div class="deck-grid" id="deckGrid"></div>
             </div>
-            <div class="deck-grid" id="deckGrid"></div>
+            
+            <div class="panel" style="display: flex; flex-direction: column; align-items: center;">
+                <h3 style="margin-top: 0; color: var(--neon-pink); border-bottom: 1px dashed #555; padding-bottom: 10px; width: 100%; text-align: center;">[ 學習成效雷達 ]</h3>
+                <div style="width: 100%; max-width: 250px;"><canvas id="statsChart"></canvas></div>
+                <div id="totalTimeStat" style="margin-top: 20px; font-size: 14px; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); text-align: center;"></div>
+            </div>
         </div>
     </div>
 
@@ -76,8 +88,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
         let currentUser = localStorage.getItem('fc_username') || '';
+        let myChart = null;
 
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -86,23 +98,13 @@
         function showLoading(text) { document.getElementById('loading').innerText = text; document.getElementById('loading').style.display = 'block'; }
         function hideLoading() { document.getElementById('loading').style.display = 'none'; }
 
-        window.onload = () => {
-            if (currentUser) {
-                switchView('dashboardView');
-                document.getElementById('displayUsername').innerText = currentUser;
-                loadDashboard(currentUser);
-            }
-        };
+        window.onload = () => { if (currentUser) { switchView('dashboardView'); document.getElementById('displayUsername').innerText = currentUser; loadDashboard(currentUser); } };
 
         document.getElementById('btnLogin').onclick = async () => {
             const user = document.getElementById('usernameInput').value.trim(); if (!user) return;
             showLoading('🔄 驗證中...');
             const snapshot = await get(child(ref(db), `users/${user}`));
-            if (snapshot.exists()) {
-                currentUser = user; localStorage.setItem('fc_username', user);
-                document.getElementById('displayUsername').innerText = user;
-                switchView('dashboardView'); loadDashboard(user);
-            } else alert('查無此帳號');
+            if (snapshot.exists()) { currentUser = user; localStorage.setItem('fc_username', user); document.getElementById('displayUsername').innerText = user; switchView('dashboardView'); loadDashboard(user); } else alert('查無此帳號');
             hideLoading();
         };
 
@@ -112,45 +114,63 @@
             const snapshot = await get(child(ref(db), `users/${user}`));
             if (snapshot.exists()) { hideLoading(); return alert('帳號已被使用'); }
             await set(ref(db, `users/${user}`), { username: user });
-            currentUser = user; localStorage.setItem('fc_username', user);
-            document.getElementById('displayUsername').innerText = user;
-            switchView('dashboardView'); loadDashboard(user);
+            currentUser = user; localStorage.setItem('fc_username', user); document.getElementById('displayUsername').innerText = user; switchView('dashboardView'); loadDashboard(user);
             hideLoading();
         };
 
-        document.getElementById('btnLogout').onclick = () => {
-            localStorage.removeItem('fc_username'); currentUser = ''; switchView('authView');
-        };
+        document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('fc_username'); currentUser = ''; switchView('authView'); };
 
         async function loadDashboard(user) {
             showLoading('下載數據...');
             const snapshot = await get(ref(db, `cards/${user}`));
             const grid = document.getElementById('deckGrid'); grid.innerHTML = '';
+            if(snapshot.exists()) {
+                const data = snapshot.val();
+                const decks = [...new Set(Object.values(data).map(c => c.deck))];
+                decks.forEach(deckName => {
+                    const count = Object.values(data).filter(c => c.deck === deckName).length;
+                    const cardEl = document.createElement('div'); cardEl.className = 'deck-card'; 
+                    cardEl.onclick = () => { localStorage.setItem('fc_current_deck', deckName); window.location.href = 'deck.html'; };
+                    cardEl.innerHTML = `<div style="font-size: 18px; color: var(--neon-cyan); margin-bottom:5px;">${deckName}</div><div style="color: #64748b; font-size: 12px;">容量: ${count} 筆</div>`;
+                    grid.appendChild(cardEl);
+                });
+            } else { grid.innerHTML = '<p style="color:#555;">無節點資料</p>'; }
             
-            if(!snapshot.exists()) {
-                grid.innerHTML = '<p style="color:#555;">無節點資料</p>'; hideLoading(); return;
+            // 繪製成效圖表
+            const logSnap = await get(ref(db, `logs/${user}`));
+            if(logSnap.exists()) {
+                const logs = Object.values(logSnap.val());
+                let modesCount = { '單字卡': 0, '測驗(填空)': 0, '四選一': 0 };
+                let totalMs = 0;
+                logs.forEach(l => {
+                    if (l.type && l.durationMs) {
+                        totalMs += parseInt(l.durationMs);
+                        if(l.type.includes('單字卡')) modesCount['單字卡']++;
+                        if(l.type.includes('英翻中')) modesCount['測驗(填空)']++;
+                        if(l.type.includes('四選一')) modesCount['四選一']++;
+                    }
+                });
+                
+                let mins = Math.floor(totalMs / 60000);
+                document.getElementById('totalTimeStat').innerText = `總訓練時數：${mins} 分鐘`;
+                
+                const ctx = document.getElementById('statsChart').getContext('2d');
+                if(myChart) myChart.destroy();
+                myChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(modesCount),
+                        datasets: [{ label: '訓練次數', data: Object.values(modesCount), backgroundColor: ['rgba(0, 255, 255, 0.4)', 'rgba(57, 255, 20, 0.4)', 'rgba(255, 251, 0, 0.4)'], borderColor: ['#00ffff', '#39ff14', '#fffb00'], borderWidth: 1 }]
+                    },
+                    options: { scales: { r: { grid: { color: '#333' }, ticks: { display: false }, pointLabels: { color: '#aaa' } } }, plugins: { legend: { display: false } } }
+                });
             }
-
-            const data = snapshot.val();
-            const decks = [...new Set(Object.values(data).map(c => c.deck))];
-            
-            decks.forEach(deckName => {
-                const count = Object.values(data).filter(c => c.deck === deckName).length;
-                const cardEl = document.createElement('div'); cardEl.className = 'deck-card'; 
-                cardEl.onclick = () => {
-                    localStorage.setItem('fc_current_deck', deckName);
-                    window.location.href = 'deck.html'; 
-                };
-                cardEl.innerHTML = `<div style="font-size: 18px; color: var(--neon-cyan); margin-bottom:5px;">${deckName}</div><div style="color: #64748b; font-size: 12px;">容量: ${count} 筆</div>`;
-                grid.appendChild(cardEl);
-            });
             hideLoading();
         }
 
         document.getElementById('btnCreateDeck').onclick = () => {
             const name = document.getElementById('newDeckInput').value.trim(); if (!name) return;
-            localStorage.setItem('fc_current_deck', name);
-            window.location.href = 'deck.html';
+            localStorage.setItem('fc_current_deck', name); window.location.href = 'deck.html';
         };
     </script>
 </body>

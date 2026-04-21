@@ -5,22 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CYBER-FLASH: 訓練模組</title>
     <style>
-        :root { --neon-cyan: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-purple: #b026ff; --neon-orange: #ff6600; --dark-bg: #090a0f; --text-main: #e0e6ed; }
+        :root { --neon-cyan: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --dark-bg: #090a0f; --text-main: #e0e6ed; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 255, 0.08) 1px, transparent 1px); background-size: 40px 40px; margin: 0; padding: 20px; color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh;}
-        .nav-bar { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 15px; margin-bottom: 40px; }
-        .mode-title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow), var(--neon-cyan)); background-size: 300%; -webkit-background-clip: text; color: transparent; animation: textGlow 5s linear infinite; text-shadow: 0 0 10px rgba(255,255,255,0.2);}
+        .nav-bar { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 15px; margin-bottom: 40px; flex-wrap: wrap; gap: 10px;}
+        .mode-title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow), var(--neon-cyan)); background-size: 300%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: textGlow 5s linear infinite; text-shadow: 0 0 10px rgba(255,255,255,0.2);}
         @keyframes textGlow { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
         button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         select { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); border-radius: 4px; padding: 8px; font-size: 14px; outline: none; }
-        .btn-secondary { padding: 10px 20px; background: transparent; color: var(--neon-purple); border: 1px solid var(--neon-purple); box-shadow: 0 0 8px rgba(176, 38, 255, 0.2); border-radius: 4px; }
-        .btn-secondary:hover { background: var(--neon-purple); color: #fff; box-shadow: 0 0 15px var(--neon-purple); }
+        .btn-secondary { padding: 10px 20px; background: transparent; color: var(--neon-pink); border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255, 0, 255, 0.2); border-radius: 4px; }
         .btn-action { padding: 12px 30px; background: transparent; border-radius: 4px; font-size: 16px;}
-        .btn-cyan { color: var(--neon-cyan); border: 1px solid var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 255, 255, 0.2); } .btn-cyan:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
-        .btn-orange { color: var(--neon-orange); border: 1px solid var(--neon-orange); box-shadow: 0 0 8px rgba(255, 102, 0, 0.2); } .btn-orange:hover { background: var(--neon-orange); color: #000; box-shadow: 0 0 15px var(--neon-orange); }
-        .btn-green { color: var(--neon-green); border: 1px solid var(--neon-green); box-shadow: 0 0 8px rgba(57, 255, 20, 0.2); } .btn-green:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 15px var(--neon-green); }
-        .btn-yellow { color: var(--neon-yellow); border: 1px solid var(--neon-yellow); box-shadow: 0 0 8px rgba(255, 251, 0, 0.2); } .btn-yellow:hover { background: var(--neon-yellow); color: #000; box-shadow: 0 0 15px var(--neon-yellow); }
-        .btn-gray { color: #aaa; border: 1px solid #555; } .btn-gray:hover { background: #333; color: #fff; }
-        
+        .btn-cyan { color: var(--neon-cyan); border: 1px solid var(--neon-cyan); } .btn-orange { color: var(--neon-orange); border: 1px solid var(--neon-orange); } .btn-green { color: var(--neon-green); border: 1px solid var(--neon-green); }
         .study-container { width: 100%; max-width: 600px; text-align: center; display: none; }
         .active { display: block; animation: bootUp 0.5s ease-out; }
         @keyframes bootUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -29,45 +23,39 @@
         .card-inner { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
         .big-card.flipped .card-inner { transform: rotateY(180deg); }
         .card-front, .card-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; background-color: rgba(10, 12, 18, 0.95); }
-        .card-front { border: 2px solid var(--neon-cyan); box-shadow: 0 0 25px rgba(0, 255, 255, 0.15), inset 0 0 20px rgba(0, 255, 255, 0.05); }
+        .card-front { border: 2px solid var(--neon-cyan); box-shadow: 0 0 25px rgba(0, 255, 255, 0.15); }
         .big-word { font-size: 48px; font-weight: bold; color: #fff; text-shadow: 0 0 15px var(--neon-cyan); letter-spacing: 2px; }
-        .card-back { border: 2px solid var(--neon-yellow); box-shadow: 0 0 25px rgba(255, 251, 0, 0.15), inset 0 0 20px rgba(255, 251, 0, 0.05); transform: rotateY(180deg); }
-        .big-translation { font-size: 36px; font-weight: bold; line-height: 1.5; color: #fff; text-align: center; text-shadow: 0 0 15px rgba(255, 251, 0, 0.8); width: 100%; overflow-y: auto; max-height: 100%; }
-        .big-translation::-webkit-scrollbar { display: none; }
+        .card-back { border: 2px solid var(--neon-yellow); box-shadow: 0 0 25px rgba(255, 251, 0, 0.15); transform: rotateY(180deg); padding: 40px 20px;}
+        .big-translation { font-size: 24px; font-weight: bold; line-height: 1.6; color: #fff; text-align: left; width: 100%; overflow-y: auto; max-height: 100%; }
         
-        .controls { display: flex; justify-content: center; gap: 20px; }
-        .progress-text { margin-top: 25px; color: var(--neon-cyan); font-size: 16px; letter-spacing: 3px; font-family: monospace; text-shadow: 0 0 5px rgba(0,255,255,0.5);}
+        .controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .progress-text { margin-top: 25px; color: var(--neon-cyan); font-size: 16px; letter-spacing: 3px; font-family: monospace;}
 
         .quiz-box { background: rgba(10, 15, 25, 0.8); border: 1px solid #333; border-top: 3px solid var(--neon-pink); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);}
         .quiz-question { font-size: 42px; font-weight: bold; margin-bottom: 30px; color: #fff; text-shadow: 0 0 15px var(--neon-pink); letter-spacing: 1px;}
-        .quiz-input { background: rgba(0,0,0,0.6); color: var(--neon-yellow); border: 2px solid #555; padding: 15px; font-size: 24px; width: 80%; text-align: center; margin-bottom: 20px; border-radius: 4px; outline: none; transition: 0.3s;}
-        .quiz-input:focus { border-color: var(--neon-yellow); box-shadow: 0 0 15px rgba(255, 251, 0, 0.3); }
-        .quiz-input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .quiz-input { background: rgba(0,0,0,0.6); color: var(--neon-yellow); border: 2px solid #555; padding: 15px; font-size: 24px; width: 80%; text-align: center; margin-bottom: 20px; border-radius: 4px; outline: none; }
         .feedback { margin-top: 20px; font-size: 20px; font-weight: bold; min-height: 30px;}
         .correct { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
         .wrong { color: var(--neon-orange); text-shadow: 0 0 10px var(--neon-orange); }
 
-        .result-box { background: rgba(10, 15, 25, 0.9); border: 1px solid var(--neon-cyan); padding: 30px; border-radius: 8px; text-align: left; box-shadow: 0 0 20px rgba(0,255,255,0.1); }
+        .mcq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        @media (max-width: 500px) { .mcq-grid { grid-template-columns: 1fr; } }
+        .mcq-btn { background: rgba(0,0,0,0.6); color: #fff; border: 1px solid var(--neon-cyan); padding: 20px 10px; font-size: 16px; border-radius: 8px; transition: 0.2s; word-break: break-all;}
+        .mcq-btn:hover:not(:disabled) { background: rgba(0,255,255,0.2); box-shadow: 0 0 15px var(--neon-cyan); }
+        .mcq-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .mcq-correct { background: rgba(57,255,20,0.3) !important; border-color: var(--neon-green) !important; box-shadow: 0 0 15px var(--neon-green); }
+        .mcq-wrong { background: rgba(255,102,0,0.3) !important; border-color: var(--neon-orange) !important; }
+
+        .result-box { background: rgba(10, 15, 25, 0.9); border: 1px solid var(--neon-cyan); padding: 30px; border-radius: 8px; text-align: left; }
         .result-item { border-bottom: 1px dashed #333; padding: 15px 0; display: flex; justify-content: space-between; align-items: center;}
-        .result-word { font-size: 20px; font-weight: bold; color: #fff; }
-        .result-detail { font-size: 14px; color: #aaa; margin-top: 5px; }
-        .btn-override { background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.3s;}
-        .btn-override:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 10px var(--neon-cyan); }
-        .score-text { text-align: center; font-size: 32px; color: var(--neon-cyan); margin-bottom: 20px; text-shadow: 0 0 10px var(--neon-cyan);}
     </style>
 </head>
 <body>
     <div class="nav-bar">
         <div class="mode-title" id="displayTitle">SYSTEM LOADING...</div>
-        
         <select id="studySortFilter" style="margin: 0 15px;">
-            <option value="newest">🕒 由新到舊</option>
-            <option value="oldest">⏳ 由舊到新</option>
-            <option value="a-z">🔤 A ~ Z</option>
-            <option value="length">📏 字串長度</option>
-            <option value="random">🎲 隨機順序</option>
+            <option value="newest">🕒 由新到舊</option><option value="oldest">⏳ 由舊到新</option><option value="a-z">🔤 A ~ Z</option><option value="random">🎲 隨機順序</option>
         </select>
-        
         <button class="btn-secondary" id="btnGoBack">🔙 返回節點</button>
     </div>
 
@@ -78,7 +66,6 @@
             <div class="card-inner">
                 <div class="card-front">
                     <div class="big-word" id="fcWord"></div>
-                    <div id="fcPos" style="color: var(--neon-pink); font-size: 20px; margin-top: 15px; letter-spacing: 2px;"></div>
                     <button id="btnPlaySoundFront" class="btn-action btn-cyan" style="position: absolute; bottom: 20px; right: 20px; padding: 10px; border-radius: 50%;">🔊</button>
                 </div>
                 <div class="card-back">
@@ -88,42 +75,44 @@
         </div>
         <div class="controls" style="align-items: center;">
             <button class="btn-action btn-orange" id="btnPrevCard">◄</button>
-            <button id="fcDiffBtn" class="btn-action" style="font-size: 16px; padding: 12px 20px; width: 220px;"></button>
+            <button id="fcImpBtn" class="btn-action" style="font-size: 16px; padding: 12px 20px; width: 110px; border: 1px dashed #555; color: #aaa;">🔥 易考</button>
+            <button id="fcDiffBtn" class="btn-action" style="font-size: 16px; padding: 12px 20px; width: 110px; border: 1px dashed #555; color: #aaa;">⭐ 易錯</button>
             <button class="btn-action btn-green" id="btnNextCard">►</button>
         </div>
         <div class="progress-text" id="fcProgress">SEQ: 0 / 0</div>
     </div>
 
-    <div id="fcResultMode" class="study-container">
-        <div class="result-box" style="text-align: center;">
-            <div class="score-text">訓練完成</div>
-            <div style="font-size: 20px; color: #aaa; margin-bottom: 30px;" id="fcTimeSpent"></div>
-            <button class="btn-action btn-orange" id="btnRetryFc">🔄 重新閱覽</button>
-            <button class="btn-action btn-cyan" style="margin-left: 10px;" id="btnGoBackFcResult">💾 返回節點</button>
-        </div>
-    </div>
-
     <div id="quizMode" class="study-container">
         <div class="quiz-box">
-            <div style="color: var(--neon-cyan); margin-bottom: 10px; font-size: 14px; letter-spacing: 1px;">[ 任務：破解目標數據代碼 ]</div>
+            <div style="color: var(--neon-cyan); margin-bottom: 10px;">[ 拼字破解任務 ]</div>
             <div class="quiz-question" id="quizWord"></div>
-            <input type="text" class="quiz-input" id="quizInput" placeholder="輸入解密金鑰 (中文)..." autocomplete="off">
+            <input type="text" class="quiz-input" id="quizInput" placeholder="輸入中文意思..." autocomplete="off">
             <div class="feedback" id="quizFeedback"></div>
             <div style="margin-top: 30px;">
-                <button class="btn-action btn-green" id="btnCheckAnswer">執行驗證</button>
-                <button class="btn-action btn-orange" style="margin-left: 10px;" id="btnSkip">強制跳過</button>
+                <button class="btn-action btn-green" id="btnCheckAnswer">驗證</button>
+                <button class="btn-action btn-orange" id="btnSkip">跳過</button>
             </div>
         </div>
-        <div class="progress-text" id="quizProgress" style="color: var(--neon-pink);">進度: 0 / 0</div>
+        <div class="progress-text" id="quizProgress">進度: 0 / 0</div>
     </div>
 
-    <div id="quizResultMode" class="study-container">
+    <div id="mcqMode" class="study-container">
+        <div class="quiz-box" style="border-top-color: var(--neon-orange);">
+            <div style="color: var(--neon-orange); margin-bottom: 10px;">[ 四選一光速挑戰 ]</div>
+            <div class="quiz-question" id="mcqWord"></div>
+            <div id="mcqOptions" class="mcq-grid"></div>
+            <div class="feedback" id="mcqFeedback"></div>
+            <button class="btn-action btn-green" id="btnNextMcq" style="margin-top: 20px; display: none; width: 100%;">下一題 ►</button>
+        </div>
+        <div class="progress-text" id="mcqProgress" style="color: var(--neon-orange);">進度: 0 / 0</div>
+    </div>
+
+    <div id="resultMode" class="study-container">
         <div class="result-box">
             <div class="score-text" id="finalScoreText">任務結算</div>
-            <div id="resultList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;"></div>
+            <div id="resultList" style="max-height: 350px; overflow-y: auto; margin-bottom: 20px;"></div>
             <div style="text-align: center;">
-                <button class="btn-action btn-orange" id="btnRetryWrong">🔄 錯題重作</button>
-                <button class="btn-action btn-cyan" style="margin-left: 10px;" id="btnGoBackQuizResult">💾 返回節點</button>
+                <button class="btn-action btn-orange" id="btnRetryWrong">🔄 錯題重作 / 重新閱覽</button>
             </div>
         </div>
     </div>
@@ -141,57 +130,40 @@
             messagingSenderId: "412850699903",
             appId: "1:412850699903:web:1313c5caa3e76b4e2b494a"
         };
+        const app = initializeApp(firebaseConfig); const db = getDatabase(app);
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        let originalCards = []; 
-        let cards = [];         
-        let currentIndex = 0;
-        
-        let studyStartTime = Date.now();
-        let viewedWordsSet = new Set();
-        let quizHistory = []; 
-        let quizTimeout; 
-
+        let originalCards = [], cards = [], currentIndex = 0, studyStartTime = Date.now(), quizHistory = [], mcqCorrectAnswer = "";
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode'); 
-        const username = localStorage.getItem('fc_username');
-        const deck = localStorage.getItem('fc_study_deck');
-        const filterMode = localStorage.getItem('fc_study_filter') || 'all';
+        const username = localStorage.getItem('fc_username'), deck = localStorage.getItem('fc_study_deck'), filterMode = localStorage.getItem('fc_study_filter') || 'all';
+
+        function getCardMeaningStr(c) {
+            if(c.definitions) return c.definitions.map(d => (d.meanings||[]).join('、')).join(' / ');
+            return c.chinese.replace(/<br>/g, ' ');
+        }
 
         window.onload = async () => {
-            if (!username || !deck) { window.location.href='index.html'; return; }
+            if (!username || !deck) window.location.href='index.html';
             document.getElementById('displayTitle').innerText = `[ ${deck} ]`;
-
             try {
                 const snapshot = await get(ref(db, `cards/${username}`));
                 if (!snapshot.exists()) throw new Error('No Data');
-
-                const data = snapshot.val();
-                let fetchedData = Object.entries(data).map(([id, val]) => ({ id, ...val })).filter(c => c.deck === deck);
+                let fetchedData = Object.entries(snapshot.val()).map(([id, val]) => ({ id, ...val })).filter(c => c.deck === deck);
                 
-                if (filterMode === 'difficult') {
-                    fetchedData = fetchedData.filter(c => String(c.is_difficult).toLowerCase() === 'true');
-                }
-
-                originalCards = [...fetchedData]; 
+                // ✨ 支援讀取「易考」或「易錯」分類
+                if (filterMode === 'difficult') fetchedData = fetchedData.filter(c => String(c.is_difficult).toLowerCase() === 'true');
+                if (filterMode === 'important') fetchedData = fetchedData.filter(c => String(c.is_important).toLowerCase() === 'true');
                 
+                originalCards = [...fetchedData];
                 document.getElementById('loading').style.display = 'none';
-                if (originalCards.length === 0) { 
-                    alert('此條件下尚無單字數據！'); 
-                    window.location.href = 'deck.html'; 
-                    return; 
-                }
-
+                if (originalCards.length === 0) { alert('無數據！'); window.location.href = 'deck.html'; return; }
+                
                 document.getElementById('studySortFilter').dispatchEvent(new Event('change'));
-
-            } catch (e) { alert('資料庫讀取異常！'); window.location.href='deck.html'; }
+            } catch (e) { alert('讀取異常！'); window.location.href='deck.html'; }
         };
 
         document.getElementById('studySortFilter').onchange = (e) => {
-            const sortMethod = e.target.value;
-            cards = [...originalCards];
+            const sortMethod = e.target.value; cards = [...originalCards];
             cards.sort((a, b) => {
                 if (sortMethod === 'a-z') return a.english.localeCompare(b.english);
                 if (sortMethod === 'length') return a.english.length - b.english.length;
@@ -199,228 +171,159 @@
                 if (sortMethod === 'random') return Math.random() - 0.5; 
                 return b.timestamp - a.timestamp; 
             });
-            
-            currentIndex = 0; 
-            if (mode === 'flashcard') {
-                document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-                document.getElementById('flashcardMode').classList.add('active');
-                loadFlashcard();
-            } else if (mode === 'quiz') {
-                document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-                document.getElementById('quizMode').classList.add('active');
-                quizHistory = [];
-                loadQuiz();
-            }
+            currentIndex = 0; startMode();
         };
 
-        // ✨ 強化日誌紀錄：寫入詳細的易錯模式與排序狀態
-        async function goBackAndLog() {
-            document.getElementById('displayTitle').innerText = '💾 數據同步中...';
-            const durationMs = Date.now() - studyStartTime;
-            
-            // 抓出排序的中文名稱
-            const sortSelect = document.getElementById('studySortFilter');
-            const sortLabelText = sortSelect.options[sortSelect.selectedIndex].text.split(' ')[1]; // 拿掉 emoji
-
-            // 組合字串
-            let type = (mode === 'flashcard' ? '單字卡模式' : '英翻中測驗') + ` (${sortLabelText})`;
-            let loggedDeck = deck + (filterMode === 'difficult' ? ' (易錯模式)' : '');
-            
-            let remarks = "";
-            if (mode === 'flashcard') {
-                remarks = viewedWordsSet.size > 0 ? `已瀏覽單字: ${Array.from(viewedWordsSet).join(', ')}` : "未瀏覽任何單字";
-            } else if (mode === 'quiz') {
-                const correctCount = quizHistory.filter(q => q.isCorrect).length;
-                const wrongWords = quizHistory.filter(q => !q.isCorrect).map(q => q.word);
-                remarks = `做題結果: ${correctCount}/${quizHistory.length} 正確。`;
-                if(wrongWords.length > 0) remarks += ` 錯題: ${wrongWords.join(', ')}`;
-            }
-
-            try { await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: durationMs, deck: loggedDeck, type: type, remarks: remarks }); } 
-            catch (e) { console.error('日誌同步失敗'); }
-            
-            window.location.href = 'deck.html';
+        function startMode() {
+            document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
+            if (mode === 'flashcard') { document.getElementById('flashcardMode').classList.add('active'); loadFlashcard(); }
+            else if (mode === 'quiz') { document.getElementById('quizMode').classList.add('active'); quizHistory = []; loadQuiz(); }
+            else if (mode === 'mcq') { document.getElementById('mcqMode').classList.add('active'); quizHistory = []; loadMcq(); }
         }
-
-        document.getElementById('btnGoBack').onclick = goBackAndLog;
-        document.getElementById('btnGoBackFcResult').onclick = goBackAndLog;
-        document.getElementById('btnGoBackQuizResult').onclick = goBackAndLog;
 
         function loadFlashcard() {
-            const card = cards[currentIndex];
-            document.getElementById('studyCard').classList.remove('flipped');
+            const card = cards[currentIndex]; document.getElementById('studyCard').classList.remove('flipped');
             document.getElementById('fcWord').innerText = card.english;
-            document.getElementById('fcPos').innerText = card.pos || '';
-            document.getElementById('fcTranslation').innerHTML = card.chinese;
+            
+            let backHtml = '';
+            if(card.definitions) {
+                backHtml = card.definitions.map(def => `
+                    <div style="margin-bottom: 15px;">
+                        <span style="color: var(--neon-pink); font-size: 18px;">${(def.pos||[]).map(p=>`(${p})`).join('')}</span> 
+                        <span style="color: #fff;">${(def.meanings||[]).join('；')}</span>
+                        ${def.example ? `<div style="color: #aaa; font-size: 16px; margin-top: 8px; border-left: 3px solid #555; padding-left: 10px;">${def.example}</div>` : ''}
+                        ${def.source ? `<div style="color: #666; font-size: 14px; margin-top: 5px;">出處: ${def.source}</div>` : ''}
+                    </div>`).join('<hr style="border-top: 1px dashed #444; margin: 15px 0;">');
+            } else { backHtml = `<span style="color: var(--neon-pink);">${card.pos||''}</span> ${card.chinese}`; }
+            
+            document.getElementById('fcTranslation').innerHTML = backHtml;
             document.getElementById('fcProgress').innerText = `SEQ: ${currentIndex + 1} / ${cards.length}`;
             
+            // ✨ 控制雙按鈕
             const diffBtn = document.getElementById('fcDiffBtn');
-            const isDiff = String(card.is_difficult).toLowerCase() === 'true';
-            diffBtn.innerText = isDiff ? '❌ 移出易錯單字' : '⭐ 加入易錯單字';
-            diffBtn.className = isDiff ? 'btn-action btn-gray' : 'btn-action btn-yellow';
-
-            viewedWordsSet.add(card.english);
-            setTimeout(() => { playSound(); }, 200);
-        }
-
-        document.getElementById('studyCard').onclick = (e) => {
-            if(e.target.tagName !== 'BUTTON') { document.getElementById('studyCard').classList.toggle('flipped'); }
-        };
-
-        document.getElementById('btnPlaySoundFront').onclick = (e) => {
-            e.stopPropagation(); 
-            playSound();
-        };
-
-        // 閃卡模式中的「標記易錯」也會寫入活動紀錄
-        document.getElementById('fcDiffBtn').onclick = async (e) => {
-            e.stopPropagation(); 
-            const card = cards[currentIndex];
-            const isCurrentlyDiff = String(card.is_difficult).toLowerCase() === 'true';
-            const newVal = isCurrentlyDiff ? 'false' : 'true';
+            diffBtn.innerText = String(card.is_difficult)==='true' ? '❌ 移出易錯' : '⭐ 易錯';
+            diffBtn.style.color = String(card.is_difficult)==='true' ? '#aaa' : 'var(--neon-yellow)';
             
-            card.is_difficult = newVal;
-            loadFlashcard(); 
-            try { 
-                await update(ref(db, `cards/${username}/${card.id}`), { is_difficult: newVal }); 
-                // 寫入日誌
-                await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: deck, type: '編輯單字', remarks: `${newVal === 'true' ? '新增' : '移出'}易錯: ${card.english}` });
-            } catch (err) {}
-        };
+            const impBtn = document.getElementById('fcImpBtn');
+            impBtn.innerText = String(card.is_important)==='true' ? '❌ 移出易考' : '🔥 易考';
+            impBtn.style.color = String(card.is_important)==='true' ? '#aaa' : 'var(--neon-orange)';
 
-        function playSound() { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(cards[currentIndex].english); u.lang = 'en-US'; speechSynthesis.speak(u); }
-        
-        document.getElementById('btnPrevCard').onclick = () => { 
-            if (currentIndex > 0) { currentIndex--; loadFlashcard(); }
-        };
-        
-        document.getElementById('btnNextCard').onclick = () => { 
-            if (currentIndex >= cards.length - 1) {
-                showFcResults();
-            } else {
-                currentIndex++; loadFlashcard(); 
-            }
-        };
-
-        function showFcResults() {
-            document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-            document.getElementById('fcResultMode').classList.add('active');
-
-            const durationMs = Date.now() - studyStartTime;
-            const totalSeconds = Math.floor(durationMs / 1000);
-            const mins = Math.floor(totalSeconds / 60);
-            const secs = totalSeconds % 60;
-            document.getElementById('fcTimeSpent').innerText = `總閱覽時間: ${mins}分 ${secs}秒`;
+            setTimeout(() => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u); }, 200);
         }
-
-        document.getElementById('btnRetryFc').onclick = () => {
-            currentIndex = 0; studyStartTime = Date.now(); viewedWordsSet.clear();
-            document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-            document.getElementById('flashcardMode').classList.add('active');
-            loadFlashcard();
-        };
+        
+        document.getElementById('studyCard').onclick = (e) => { if(e.target.tagName !== 'BUTTON') document.getElementById('studyCard').classList.toggle('flipped'); };
+        document.getElementById('btnPlaySoundFront').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(cards[currentIndex].english); u.lang = 'en-US'; speechSynthesis.speak(u); };
+        document.getElementById('btnPrevCard').onclick = () => { if (currentIndex > 0) { currentIndex--; loadFlashcard(); } };
+        document.getElementById('btnNextCard').onclick = () => { if (currentIndex >= cards.length - 1) showResults(); else { currentIndex++; loadFlashcard(); } };
+        
+        // ✨ 按鈕更新資料庫
+        document.getElementById('fcDiffBtn').onclick = (e) => { e.stopPropagation(); const c = cards[currentIndex]; c.is_difficult = String(c.is_difficult)==='true'?'false':'true'; loadFlashcard(); update(ref(db, `cards/${username}/${c.id}`), { is_difficult: c.is_difficult }); };
+        document.getElementById('fcImpBtn').onclick = (e) => { e.stopPropagation(); const c = cards[currentIndex]; c.is_important = String(c.is_important)==='true'?'false':'true'; loadFlashcard(); update(ref(db, `cards/${username}/${c.id}`), { is_important: c.is_important }); };
 
         function loadQuiz() {
-            const inputEl = document.getElementById('quizInput');
-            inputEl.value = ''; inputEl.disabled = false;
-            document.getElementById('quizFeedback').innerText = '';
-            document.getElementById('quizWord').innerText = cards[currentIndex].english;
-            document.getElementById('quizProgress').innerText = `已完成: ${currentIndex} / ${cards.length}`;
-            inputEl.focus();
+            const inputEl = document.getElementById('quizInput'); inputEl.value = ''; inputEl.disabled = false;
+            document.getElementById('quizFeedback').innerText = ''; document.getElementById('quizWord').innerText = cards[currentIndex].english;
+            document.getElementById('quizProgress').innerText = `已完成: ${currentIndex} / ${cards.length}`; inputEl.focus();
         }
-
-        document.getElementById('quizInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkAnswer(); });
-        document.getElementById('btnCheckAnswer').onclick = checkAnswer;
-        document.getElementById('btnSkip').onclick = skipQuestion;
-
-        function checkAnswer() {
-            const inputEl = document.getElementById('quizInput');
-            const answer = inputEl.value.trim();
-            if (!answer || inputEl.disabled) return; 
-            
-            inputEl.disabled = true; clearTimeout(quizTimeout); 
-
-            const correctAnswer = cards[currentIndex].chinese;
-            let isCorrect = correctAnswer.includes(answer);
-            
-            quizHistory.push({ word: cards[currentIndex].english, userAns: answer, correctAns: correctAnswer, isCorrect: isCorrect });
-
+        document.getElementById('btnCheckAnswer').onclick = () => {
+            const inputEl = document.getElementById('quizInput'); const ans = inputEl.value.trim(); if (!ans || inputEl.disabled) return;
+            inputEl.disabled = true; const correctAns = getCardMeaningStr(cards[currentIndex]);
+            const isCorrect = correctAns.includes(ans);
+            quizHistory.push({ word: cards[currentIndex].english, userAns: ans, correctAns: correctAns, isCorrect: isCorrect });
             if (isCorrect) {
-                document.getElementById('quizFeedback').className = 'feedback correct';
-                document.getElementById('quizFeedback').innerText = '[ 驗證成功：存取授權 ]';
-                quizTimeout = setTimeout(() => { nextQuiz(); }, 800);
+                document.getElementById('quizFeedback').className = 'feedback correct'; document.getElementById('quizFeedback').innerText = '✅ 正確';
+                setTimeout(() => { currentIndex++; if(currentIndex >= cards.length) showResults(); else loadQuiz(); }, 800);
             } else {
-                document.getElementById('quizFeedback').className = 'feedback wrong';
-                document.getElementById('quizFeedback').innerHTML = `
-                    [ 驗證失敗 ]<br><span style="font-size:16px; color:#aaa;">系統記錄答案：${correctAnswer}</span><br>
-                    <button class="btn-override" id="btnOverride" style="margin-top: 15px; padding: 10px 20px; font-size: 16px;">⚡ 強制判定為正確 (給對)</button>
-                `;
-                document.getElementById('btnOverride').onclick = overrideCurrentAnswer;
-                quizTimeout = setTimeout(() => { nextQuiz(); }, 4000); 
+                document.getElementById('quizFeedback').className = 'feedback wrong'; document.getElementById('quizFeedback').innerHTML = `❌ 失敗<br><span style="font-size:14px;color:#aaa;">答案：${correctAns}</span><button class="btn-action" id="btnForceRight" style="border:1px solid var(--neon-cyan); color:var(--neon-cyan); margin-top:10px;">⚡ 給對</button>`;
+                document.getElementById('btnForceRight').onclick = () => { quizHistory[quizHistory.length - 1].isCorrect = true; currentIndex++; if(currentIndex >= cards.length) showResults(); else loadQuiz(); };
             }
-        }
+        };
+        document.getElementById('btnSkip').onclick = () => { quizHistory.push({ word: cards[currentIndex].english, userAns: "(跳過)", correctAns: getCardMeaningStr(cards[currentIndex]), isCorrect: false }); currentIndex++; if(currentIndex >= cards.length) showResults(); else loadQuiz(); };
 
-        function overrideCurrentAnswer() {
-            clearTimeout(quizTimeout); 
-            quizHistory[quizHistory.length - 1].isCorrect = true;
-            document.getElementById('quizFeedback').className = 'feedback correct';
-            document.getElementById('quizFeedback').innerText = '[ 強制覆寫授權：驗證成功 ]';
-            quizTimeout = setTimeout(() => { nextQuiz(); }, 800);
-        }
-        
-        function skipQuestion() {
-            quizHistory.push({ word: cards[currentIndex].english, userAns: "(跳過)", correctAns: cards[currentIndex].chinese, isCorrect: false });
-            nextQuiz();
-        }
+        function loadMcq() {
+            const card = cards[currentIndex]; mcqCorrectAnswer = getCardMeaningStr(card);
+            document.getElementById('mcqFeedback').innerText = '';
+            document.getElementById('btnNextMcq').style.display = 'none';
+            document.getElementById('mcqWord').innerText = card.english;
+            document.getElementById('mcqProgress').innerText = `進度: ${currentIndex} / ${cards.length}`;
 
-        function nextQuiz() {
-            currentIndex++;
-            if (currentIndex >= cards.length) showQuizResults(); 
-            else loadQuiz(); 
-        }
+            let options = [mcqCorrectAnswer];
+            let otherCards = originalCards.filter(c => c.english !== card.english);
+            otherCards.sort(() => Math.random() - 0.5);
+            for(let i=0; i<Math.min(3, otherCards.length); i++) { options.push(getCardMeaningStr(otherCards[i])); }
+            options.sort(() => Math.random() - 0.5);
 
-        function showQuizResults() {
-            document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-            document.getElementById('quizResultMode').classList.add('active');
-            renderResultList();
-        }
-
-        function renderResultList() {
-            const listEl = document.getElementById('resultList');
-            listEl.innerHTML = '';
-            let correctCount = quizHistory.filter(q => q.isCorrect).length;
-            document.getElementById('finalScoreText').innerText = `任務結算: ${correctCount} / ${quizHistory.length} 成功`;
-
-            quizHistory.forEach((q, index) => {
-                const item = document.createElement('div');
-                item.className = 'result-item';
-                let statusIcon = q.isCorrect ? '<span style="color:var(--neon-green)">✅</span>' : '<span style="color:var(--neon-orange)">❌</span>';
-                let overrideBtn = q.isCorrect ? '' : `<button class="btn-override" data-idx="${index}">判定為正確</button>`;
-                
-                item.innerHTML = `
-                    <div>
-                        <div class="result-word">${statusIcon} ${q.word}</div>
-                        <div class="result-detail">你的回答: <span style="color:#fff;">${q.userAns}</span></div>
-                        <div class="result-detail">系統答案: ${q.correctAns.replace(/<br>/g, ' ')}</div>
-                    </div>
-                    <div>${overrideBtn}</div>
-                `;
-                
-                const btn = item.querySelector('.btn-override');
-                if(btn) { btn.onclick = () => { quizHistory[index].isCorrect = true; renderResultList(); }; }
-                listEl.appendChild(item);
+            const grid = document.getElementById('mcqOptions'); grid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button'); btn.className = 'mcq-btn'; btn.innerText = opt;
+                btn.onclick = () => checkMcqAnswer(opt, btn);
+                grid.appendChild(btn);
             });
         }
-
-        document.getElementById('btnRetryWrong').onclick = () => {
-            const wrongWords = quizHistory.filter(q => !q.isCorrect).map(q => q.word);
-            if(wrongWords.length === 0) return alert('太棒了！所有題目都已正確，不需要重作。');
+        
+        function checkMcqAnswer(selectedOpt, btnElement) {
+            document.querySelectorAll('.mcq-btn').forEach(b => b.disabled = true);
+            const isCorrect = selectedOpt === mcqCorrectAnswer;
+            quizHistory.push({ word: cards[currentIndex].english, userAns: selectedOpt, correctAns: mcqCorrectAnswer, isCorrect: isCorrect });
             
-            cards = originalCards.filter(c => wrongWords.includes(c.english));
-            currentIndex = 0; quizHistory = []; 
+            if(isCorrect) {
+                btnElement.classList.add('mcq-correct');
+                document.getElementById('mcqFeedback').className = 'feedback correct'; document.getElementById('mcqFeedback').innerText = '✅ 破解成功！';
+                setTimeout(() => { nextMcqQuestion(); }, 1000);
+            } else {
+                btnElement.classList.add('mcq-wrong');
+                document.querySelectorAll('.mcq-btn').forEach(b => { if(b.innerText === mcqCorrectAnswer) b.classList.add('mcq-correct'); });
+                document.getElementById('mcqFeedback').className = 'feedback wrong'; document.getElementById('mcqFeedback').innerText = '❌ 錯誤！請看正確答案。';
+                document.getElementById('btnNextMcq').style.display = 'block';
+            }
+        }
+        document.getElementById('btnNextMcq').onclick = nextMcqQuestion;
+        function nextMcqQuestion() { currentIndex++; if(currentIndex >= cards.length) showResults(); else loadMcq(); }
+
+        function showResults() {
             document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-            document.getElementById('quizMode').classList.add('active');
-            loadQuiz();
+            document.getElementById('resultMode').classList.add('active');
+            const listEl = document.getElementById('resultList'); listEl.innerHTML = '';
+            
+            if(mode === 'flashcard') {
+                document.getElementById('finalScoreText').innerText = `閱覽完畢`;
+                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:18px;">總共複習了 ${cards.length} 個單字。</div>`;
+            } else {
+                let correctCount = quizHistory.filter(q => q.isCorrect).length;
+                document.getElementById('finalScoreText').innerText = `任務結算: ${correctCount} / ${quizHistory.length} 成功`;
+                quizHistory.forEach((q, index) => {
+                    listEl.innerHTML += `<div class="result-item"><div>
+                        <div style="font-weight:bold; color:#fff;">${q.isCorrect?'<span style="color:#0f0">✅</span>':'<span style="color:#f80">❌</span>'} ${q.word}</div>
+                        <div style="font-size:13px; color:#aaa; margin-top:5px;">你的回答: ${q.userAns} <br> 系統答案: ${q.correctAns}</div>
+                    </div></div>`;
+                });
+            }
+        }
+        
+        document.getElementById('btnRetryWrong').onclick = () => {
+            if(mode === 'flashcard') { currentIndex=0; startMode(); return; }
+            const wrongWords = quizHistory.filter(q => !q.isCorrect).map(q => q.word);
+            if(wrongWords.length === 0) return alert('太棒了！全對！');
+            cards = originalCards.filter(c => wrongWords.includes(c.english)); currentIndex = 0; startMode();
+        };
+
+        document.getElementById('btnGoBack').onclick = async () => {
+            document.getElementById('displayTitle').innerText = '💾 同步中...';
+            const durationMs = Date.now() - studyStartTime;
+            const sortLabelText = document.getElementById('studySortFilter').options[document.getElementById('studySortFilter').selectedIndex].text.split(' ')[1];
+            
+            let typeName = mode === 'flashcard' ? '單字卡瀏覽' : (mode === 'mcq' ? '四選一測驗' : '英翻中測驗');
+            let type = `${typeName} (${sortLabelText})`;
+            
+            // ✨ 讓日誌精準紀錄當下是在什麼模式
+            let loggedDeck = deck;
+            if(filterMode === 'difficult') loggedDeck += ' (易錯模式)';
+            if(filterMode === 'important') loggedDeck += ' (易考重點)';
+            
+            let remarks = mode === 'flashcard' ? `瀏覽了 ${cards.length} 個字` : `正確率: ${quizHistory.filter(q=>q.isCorrect).length}/${quizHistory.length}`;
+            
+            try { await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: durationMs, deck: loggedDeck, type: type, remarks: remarks }); } catch (e) {}
+            window.location.href = 'deck.html';
         };
     </script>
 </body>

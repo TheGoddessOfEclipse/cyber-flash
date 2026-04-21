@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CYBER-FLASH: 節點管理</title>
     <style>
-        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
+        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; margin: 0; padding: 20px; color: var(--text-main); }
         button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         input[type="text"], textarea, select { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
@@ -14,6 +14,7 @@
         .btn-primary:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
         .btn-secondary { padding: 10px 15px; background: transparent; color: var(--neon-pink); border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255, 0, 255, 0.2); border-radius: 4px; }
         .btn-secondary:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 15px var(--neon-pink); }
+        .btn-action { padding: 5px 10px; border-radius: 4px; background: transparent; font-size: 12px; }
         .panel { background: var(--panel-bg); border: 1px solid #1f2937; border-radius: 8px; backdrop-filter: blur(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; }
         
         .flashcard-layout { display: grid; grid-template-columns: 280px 1fr 250px; gap: 20px; height: 90vh; max-width: 1200px; margin: 0 auto;}
@@ -26,6 +27,7 @@
         .btn-tab { flex: 1; padding: 8px; background: transparent; color: #888; border: 1px solid #333; font-size: 13px; border-radius: 4px;}
         .btn-tab.active { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
         .btn-tab.active-diff { background: var(--neon-yellow); color: #000; border-color: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
+        .btn-tab.active-imp { background: var(--neon-orange); color: #000; border-color: var(--neon-orange); box-shadow: 0 0 10px var(--neon-orange); }
 
         #progressArea { font-size: 12px; display: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; border: 1px solid #222;}
         .progress-header { display: flex; justify-content: space-between; color: var(--neon-cyan); margin-bottom: 5px;}
@@ -35,32 +37,39 @@
         .status-done { color: var(--neon-green); }
         .status-error { color: #f44; }
         
+        .waitlist-panel { margin-top: 10px; border: 1px solid var(--neon-orange); padding: 10px; border-radius: 4px; display: none; background: rgba(255, 140, 0, 0.05); }
+        
         .center-panel { border-top: 2px solid #fff; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; }
         .center-panel.difficult-mode { border-top-color: var(--neon-yellow); }
+        .center-panel.important-mode { border-top-color: var(--neon-orange); }
         .center-panel::-webkit-scrollbar { width: 6px; } .center-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
         
-        .card-container { width: 100%; max-width: 360px; height: 160px; perspective: 1000px; cursor: pointer; flex-shrink: 0; margin-bottom: 20px; }
-        .card-inner { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+        .card-container { width: 100%; max-width: 360px; min-height: 160px; perspective: 1000px; cursor: pointer; flex-shrink: 0; margin-bottom: 20px; }
+        .card-inner { width: 100%; height: 100%; min-height: 160px; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
         .card-container.flipped .card-inner { transform: rotateY(180deg); }
-        .card-front, .card-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; background-color: rgba(15, 20, 30, 0.95); }
-        .card-front { border: 1px solid var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); }
-        .card-back { border: 1px solid var(--neon-pink); transform: rotateY(180deg); align-items: flex-start; justify-content: flex-start; padding: 20px;}
+        .card-front, .card-back { width: 100%; height: 100%; min-height: 160px; position: absolute; backface-visibility: hidden; border-radius: 8px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; background-color: rgba(15, 20, 30, 0.95); }
+        .card-front { border: 1px solid var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); align-items: center; justify-content: center;}
+        .card-back { border: 1px solid var(--neon-pink); transform: rotateY(180deg); align-items: flex-start; justify-content: flex-start; padding: 20px 20px 45px 20px;}
         .card-front.diff-glow { border-color: var(--neon-yellow); box-shadow: 0 0 10px rgba(255, 251, 0, 0.2); }
+        .card-front.imp-glow { border-color: var(--neon-orange); box-shadow: 0 0 15px rgba(255, 140, 0, 0.4); }
         .word-text { font-size: 26px; font-weight: bold; color: #fff; }
-        .translation-text { font-size: 16px; line-height: 1.5; color: #e2e8f0; width: 100%; overflow-y: auto; margin-bottom: 10px; }
+        .translation-text { font-size: 14px; line-height: 1.5; color: #e2e8f0; width: 100%; overflow-y: auto; margin-bottom: 5px; }
         .translation-text::-webkit-scrollbar { width: 2px; } .translation-text::-webkit-scrollbar-thumb { background: var(--neon-pink); }
         .card-actions { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px; }
         .action-icon { background: rgba(0,0,0,0.8); border: 1px solid #555; color: #aaa; padding: 5px 8px; font-size: 12px; border-radius: 4px; z-index: 10;}
         .action-icon:hover { color: var(--neon-cyan); border-color: var(--neon-cyan); }
-        .icon-diff:hover { color: var(--neon-yellow); border-color: var(--neon-yellow); }
         
         .right-panel { border-top: 2px solid var(--neon-pink); }
         .mode-title { text-align: center; color: var(--neon-pink); margin-bottom: 20px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 10px;}
         .btn-mode { padding: 15px; font-size: 16px; border-color: #555; color: #e2e8f0; margin-bottom: 15px; text-align: left; position: relative; overflow: hidden;}
         .btn-mode:hover { border-color: var(--neon-pink); color: var(--neon-pink); box-shadow: 0 0 15px rgba(255,0,255,0.2); }
         
-        .filter-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        .filter-group select { flex: 1; padding: 8px; font-size: 13px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);}
+        .modal-content { background: rgba(10, 15, 25, 0.95); border: 1px solid var(--neon-cyan); border-top: 3px solid var(--neon-cyan); border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto; color: #e0e6ed; position: relative;}
+        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; color: #888; font-size: 24px; transition: 0.3s;} .close-btn:hover { color: var(--neon-pink); }
+        .edit-block { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; border-radius: 8px; position: relative; background: rgba(0,0,0,0.4); }
+        .edit-input-group { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+        .tag-input { display: inline-flex; align-items: center; background: rgba(255,0,255,0.1); border: 1px solid var(--neon-pink); padding: 2px 8px; border-radius: 12px; font-size: 12px; margin: 2px; }
 
         @media (max-width: 850px) {
             .flashcard-layout { grid-template-columns: 1fr; height: auto; gap: 10px; }
@@ -81,7 +90,8 @@
             <div style="font-size: 12px; color: #888; margin-bottom: 5px;">[ 檢視模式 ]</div>
             <div class="switch-container">
                 <button class="btn-tab active" id="tabAll">普通單字表</button>
-                <button class="btn-tab" id="tabDiff">⚠️ 易錯單字</button>
+                <button class="btn-tab" id="tabDiff">⚠️ 易錯</button>
+                <button class="btn-tab" id="tabImp">🔥 易考</button>
             </div>
 
             <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
@@ -93,27 +103,19 @@
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBarFill"></div></div>
                 <div id="statusList" style="max-height: 80px; overflow-y: auto;"></div>
             </div>
+
+            <div id="waitingListPanel" class="waitlist-panel">
+                <div style="color: var(--neon-orange); font-weight: bold; margin-bottom: 5px; font-size: 13px;">⏳ 擁擠等待清單 (<span id="waitCount">0</span>)</div>
+                <div id="waitItems" style="margin-bottom: 10px; max-height: 150px; overflow-y: auto;"></div>
+                <button class="btn-action" id="btnRetryWaitlist" style="color: var(--neon-orange); border: 1px solid var(--neon-orange); width: 100%;">🔄 全部重新激活</button>
+            </div>
             
             <hr class="cyber-hr">
             <div style="font-size: 12px; color: #888; margin-bottom: 5px;">[ 檢索與排序引擎 ]</div>
             <input type="text" id="searchInput" placeholder="🔍 搜尋已存字庫..." style="margin-bottom: 10px;">
-            
-            <div class="filter-group">
-                <select id="posFilter">
-                    <option value="all">🏷️ 所有詞性</option>
-                    <option value="n.">名詞 (n.)</option>
-                    <option value="v.">動詞 (v.)</option>
-                    <option value="adj.">形容詞 (adj.)</option>
-                    <option value="adv.">副詞 (adv.)</option>
-                </select>
-                <select id="sortFilter">
-                    <option value="newest">🕒 最新加入</option>
-                    <option value="oldest">⏳ 最早加入</option>
-                    <option value="a-z">🔤 A ~ Z</option>
-                    <option value="length">📏 單字長度</option>
-                    <option value="random">🎲 隨機打亂</option>
-                </select>
-            </div>
+            <select id="sortFilter" style="width: 100%; padding: 8px; font-size: 13px;">
+                <option value="newest">🕒 最新加入</option><option value="oldest">⏳ 最早加入</option><option value="a-z">🔤 A ~ Z</option><option value="random">🎲 隨機打亂</option>
+            </select>
         </div>
         
         <div class="center-panel panel" id="cardGrid"></div>
@@ -121,8 +123,21 @@
         <div class="right-panel panel">
             <div class="mode-title">TRAINING MODES</div>
             <div style="font-size: 12px; color: var(--neon-yellow); margin-bottom: 15px; text-align: center;" id="trainingScopeTxt">目前範圍：所有單字</div>
-            <button class="btn-primary btn-mode" id="btnFlashcardMode">🃏 單字卡翻轉模式</button>
-            <button class="btn-primary btn-mode" id="btnQuizMode">📝 英翻中測驗模式</button>
+            <button class="btn-primary btn-mode" id="btnFlashcardMode">🃏 單字卡翻轉</button>
+            <button class="btn-primary btn-mode" id="btnQuizMode">📝 拼字填空測驗</button>
+            <button class="btn-primary btn-mode" id="btnMcqMode" style="border-color: var(--neon-orange); color: var(--neon-orange);">🕹️ 四選一挑戰</button>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeEditModal">&times;</span>
+            <h3 style="color: var(--neon-cyan); margin-top: 0; border-bottom: 1px dashed #555; padding-bottom: 10px;">編輯單字: <span id="editWordTitle" style="color: #fff;"></span></h3>
+            <div id="editDefinitionsContainer"></div>
+            <button class="btn-action" id="btnAddDefBlock" style="width: 100%; border: 1px dashed #888; color: #aaa; padding: 10px; margin-top: 10px;">➕ 新增一組完整資訊 (詞性/中文/例句)</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-primary" id="btnSaveEdit" style="flex: 2; margin: 0;">💾 儲存修改</button>
+            </div>
         </div>
     </div>
 
@@ -142,33 +157,18 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
-        // 🚀 自動連線至你正確的 Google Sheets 網址！
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqcLuk_MS9Tu9l8rkDk1JZysoZIBxNWwZJW2mkMp3_a-V7Mxn6UnsdwrPnmjbkahPFbC62e2e8fEcP/pub?output=csv";
-        
         let GEMINI_API_KEY = ""; 
+        let waitingList = [];
 
-        // ✨ Google Sheets 抓取系統強勢回歸！
         async function fetchApiKey() {
             if (GEMINI_API_KEY) return GEMINI_API_KEY; 
             try {
                 const response = await fetch(SHEET_CSV_URL);
-                if (!response.ok) throw new Error('無法讀取試算表，請確認網址是否正確。');
-                const text = await response.text();
-                
-                // 暴力清除所有單雙引號、換行符號和看不見的空白！
-                GEMINI_API_KEY = text.replace(/^\uFEFF/, '').replace(/['"\s\r\n]/g, ''); 
-                
-                if (GEMINI_API_KEY.includes("<html") || GEMINI_API_KEY.length > 50) {
-                     alert("🚨 系統錯誤：抓取到的不是金鑰！請確認試算表 A1 格子內『只有』金鑰。");
-                     return null;
-                }
+                if (!response.ok) throw new Error('API fetch failed');
+                GEMINI_API_KEY = (await response.text()).replace(/^\uFEFF/, '').replace(/['"\s\r\n]/g, ''); 
                 return GEMINI_API_KEY;
-            } catch (err) {
-                console.error(err);
-                alert('🚨 無法從 Google Sheets 取得金鑰，請檢查連線狀態！');
-                return null;
-            }
+            } catch (err) { alert('API 連線失敗'); return null; }
         }
 
         const username = localStorage.getItem('fc_username');
@@ -179,42 +179,51 @@
         if (!username || !currentDeck) window.location.href = 'index.html';
         document.getElementById('currentDeckName').innerText = `📍 節點：${currentDeck}`;
 
-        updateFilterUI();
-
         onValue(ref(db, `cards/${username}`), (snapshot) => {
             const data = snapshot.val() || {};
-            currentCards = Object.entries(data).map(([id, val]) => ({ id, ...val }))
-                           .filter(c => c.deck === currentDeck);
+            currentCards = Object.entries(data).map(([id, val]) => ({ id, ...val })).filter(c => c.deck === currentDeck);
             renderCards();
         });
+
+        document.getElementById('tabAll').onclick = () => { filterMode = 'all'; updateFilterUI(); };
+        document.getElementById('tabDiff').onclick = () => { filterMode = 'difficult'; updateFilterUI(); };
+        document.getElementById('tabImp').onclick = () => { filterMode = 'important'; updateFilterUI(); };
+        document.getElementById('searchInput').oninput = renderCards;
+        document.getElementById('sortFilter').onchange = renderCards;
 
         function updateFilterUI() {
             document.getElementById('tabAll').className = filterMode === 'all' ? 'btn-tab active' : 'btn-tab';
             document.getElementById('tabDiff').className = filterMode === 'difficult' ? 'btn-tab active-diff' : 'btn-tab';
-            document.getElementById('cardGrid').className = filterMode === 'difficult' ? 'center-panel panel difficult-mode' : 'center-panel panel';
-            document.getElementById('trainingScopeTxt').innerText = filterMode === 'difficult' ? '目前範圍：⚠️ 僅限易錯單字' : '目前範圍：所有單字';
+            document.getElementById('tabImp').className = filterMode === 'important' ? 'btn-tab active-imp' : 'btn-tab';
+            
+            const grid = document.getElementById('cardGrid');
+            grid.className = 'center-panel panel';
+            if(filterMode === 'difficult') grid.classList.add('difficult-mode');
+            if(filterMode === 'important') grid.classList.add('important-mode');
+            
+            let scopeTxt = '目前範圍：所有單字';
+            if(filterMode === 'difficult') scopeTxt = '目前範圍：⚠️ 僅限易錯單字';
+            if(filterMode === 'important') scopeTxt = '目前範圍：🔥 僅限易考重點';
+            document.getElementById('trainingScopeTxt').innerText = scopeTxt;
+            
             renderCards();
         }
-
-        document.getElementById('tabAll').onclick = () => { filterMode = 'all'; updateFilterUI(); };
-        document.getElementById('tabDiff').onclick = () => { filterMode = 'difficult'; updateFilterUI(); };
-        
-        document.getElementById('searchInput').oninput = renderCards;
-        document.getElementById('posFilter').onchange = renderCards;
-        document.getElementById('sortFilter').onchange = renderCards;
 
         function renderCards() {
             const grid = document.getElementById('cardGrid'); grid.innerHTML = '';
             const term = document.getElementById('searchInput').value.toLowerCase().trim();
-            const pos = document.getElementById('posFilter').value;
             const sortMethod = document.getElementById('sortFilter').value;
             
             let filtered = currentCards.filter(c => {
-                const matchSearch = c.english.toLowerCase().includes(term) || c.chinese.includes(term);
-                const matchPos = pos === 'all' || (c.pos || '').toLowerCase().includes(pos);
+                const searchStr = c.english.toLowerCase() + " " + (c.definitions ? JSON.stringify(c.definitions) : c.chinese);
                 const isCardDiff = String(c.is_difficult).toLowerCase() === 'true';
-                const matchDiff = filterMode === 'all' ? true : isCardDiff;
-                return matchSearch && matchPos && matchDiff;
+                const isCardImp = String(c.is_important).toLowerCase() === 'true';
+                
+                let matchFilter = true;
+                if(filterMode === 'difficult') matchFilter = isCardDiff;
+                if(filterMode === 'important') matchFilter = isCardImp;
+
+                return searchStr.includes(term) && matchFilter;
             });
 
             filtered.sort((a, b) => {
@@ -225,143 +234,226 @@
                 return b.timestamp - a.timestamp; 
             });
 
-            if(filtered.length === 0) { grid.innerHTML = '<div style="color:#666; margin-top: 20px;">[ 查無符合條件的數據 ]</div>'; return; }
+            if(filtered.length === 0) { grid.innerHTML = '<div style="color:#666; margin-top: 20px;">[ 查無數據 ]</div>'; return; }
 
             filtered.forEach(card => {
                 const el = document.createElement('div'); el.className = 'card-container';
-                el.onclick = (e) => { if(!e.target.classList.contains('action-icon')) el.classList.toggle('flipped'); };
-                
+                el.onclick = (e) => { if(!e.target.closest('.action-icon')) el.classList.toggle('flipped'); };
                 const isDiff = String(card.is_difficult).toLowerCase() === 'true';
-                const frontClass = isDiff ? 'card-front diff-glow' : 'card-front';
+                const isImp = String(card.is_important).toLowerCase() === 'true';
                 
+                let frontClass = 'card-front';
+                if(isDiff) frontClass += ' diff-glow';
+                if(isImp) frontClass += ' imp-glow';
+                
+                let backHtml = '';
+                if(card.definitions && Array.isArray(card.definitions)) {
+                    backHtml = card.definitions.map(def => `
+                        <div style="margin-bottom: 10px; width: 100%;">
+                            <div style="color: var(--neon-cyan); font-weight: bold;">
+                                <span style="color: var(--neon-pink);">${(def.pos||[]).map(p=>`(${p})`).join('')}</span> 
+                                ${(def.meanings||[]).join('；')}
+                            </div>
+                            ${def.example ? `<div style="color: #aaa; font-size: 13px; margin-top: 4px; border-left: 2px solid #555; padding-left: 8px;">例句: ${def.example}</div>` : ''}
+                            ${def.source ? `<div style="color: #777; font-size: 11px; margin-top: 2px;">[出處: ${def.source}]</div>` : ''}
+                        </div>
+                    `).join('<hr style="border: none; border-top: 1px dashed #333; margin: 8px 0; width: 100%;">');
+                } else {
+                    backHtml = `<div style="color: var(--neon-cyan);"><span style="color: var(--neon-pink);">${card.pos||''}</span> ${card.chinese}</div>`;
+                }
+
                 el.innerHTML = `
                     <div class="card-inner">
                         <div class="${frontClass}">
                             <div class="word-text">${card.english}</div>
-                            <div style="color: var(--neon-pink); font-size: 14px; margin-top: 5px;">${card.pos || ''}</div>
                             <button class="action-icon btn-speak" style="position: absolute; bottom: 10px; right: 10px; border-color: var(--neon-cyan); color: var(--neon-cyan);">🔊</button>
                         </div>
                         <div class="card-back">
-                            <div class="translation-text">${card.chinese}</div>
-                            <div class="card-actions">
-                                <button class="action-icon icon-diff btn-diff">${isDiff ? '❌ 移出易錯' : '⭐ 標記易錯'}</button>
+                            <div class="translation-text">${backHtml}</div>
+                            <div class="card-actions" style="display: flex; gap: 5px;">
+                                <button class="action-icon btn-imp" style="${isImp ? 'color: var(--neon-orange); border-color: var(--neon-orange);' : ''}">${isImp ? '❌ 移出' : '🔥 易考'}</button>
+                                <button class="action-icon btn-diff" style="${isDiff ? 'color: var(--neon-yellow); border-color: var(--neon-yellow);' : ''}">${isDiff ? '❌ 移出' : '⭐ 易錯'}</button>
                                 <button class="action-icon btn-edit">✏️</button>
-                                <button class="action-icon delete-btn btn-del">🗑️</button>
+                                <button class="action-icon btn-del">🗑️</button>
                             </div>
                         </div>
                     </div>`;
                 
-                el.querySelector('.btn-diff').onclick = (e) => {
-                    e.stopPropagation();
-                    const newVal = isDiff ? 'false' : 'true';
-                    update(ref(db, `cards/${username}/${card.id}`), { is_difficult: newVal });
-                    push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `${newVal === 'true' ? '新增' : '移出'}易錯: ${card.english}` });
-                };
-
-                el.querySelector('.btn-edit').onclick = (e) => {
-                    e.stopPropagation();
-                    const nv = prompt('編輯 (換行按Enter):', card.chinese.replace(/<br>/g, '\n'));
-                    if (nv && nv !== card.chinese.replace(/<br>/g, '\n')) {
-                        update(ref(db, `cards/${username}/${card.id}`), { chinese: nv.replace(/\n/g, '<br>') });
-                        push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `修改翻譯: ${card.english}` });
-                    }
-                };
-
-                el.querySelector('.btn-speak').onclick = (e) => {
-                    e.stopPropagation(); speechSynthesis.cancel(); 
-                    const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u);
-                };
-
-                el.querySelector('.btn-del').onclick = (e) => {
-                    e.stopPropagation(); 
-                    if (confirm('確定刪除？')) {
-                        remove(ref(db, `cards/${username}/${card.id}`));
-                        push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `刪除單字: ${card.english}` });
-                    }
-                };
+                el.querySelector('.btn-imp').onclick = (e) => { e.stopPropagation(); const newVal = isImp ? 'false' : 'true'; update(ref(db, `cards/${username}/${card.id}`), { is_important: newVal }); };
+                el.querySelector('.btn-diff').onclick = (e) => { e.stopPropagation(); const newVal = isDiff ? 'false' : 'true'; update(ref(db, `cards/${username}/${card.id}`), { is_difficult: newVal }); };
+                el.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(card); };
+                el.querySelector('.btn-speak').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u); };
+                el.querySelector('.btn-del').onclick = (e) => { e.stopPropagation(); if (confirm('確定刪除？')) { remove(ref(db, `cards/${username}/${card.id}`)); push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `刪除單字: ${card.english}` }); } };
                 grid.appendChild(el);
             });
         }
 
-        document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
-        
-        document.getElementById('btnBulkAdd').onclick = async () => {
-            const apiKey = await fetchApiKey();
-            if (!apiKey) return; 
+        // ================= 編輯器邏輯 =================
+        let editCardData = null;
+        function openEditModal(card) {
+            editCardData = JSON.parse(JSON.stringify(card));
+            if (!editCardData.definitions) { editCardData.definitions = [{ pos: [card.pos || ''], meanings: [card.chinese ? card.chinese.replace(/<br>/g, ' ') : ''], example: '', source: '' }]; }
+            document.getElementById('editWordTitle').innerText = editCardData.english;
+            renderEditModal();
+            document.getElementById('editModal').style.display = 'flex';
+        }
 
-            const input = document.getElementById('wordInput'); const raw = input.value.trim(); if (!raw) return;
-            const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; input.value = '';
-            
+        function renderEditModal() {
+            const container = document.getElementById('editDefinitionsContainer');
+            container.innerHTML = '';
+            editCardData.definitions.forEach((def, index) => {
+                const block = document.createElement('div'); block.className = 'edit-block';
+                block.innerHTML = `
+                    <button class="action-icon" style="position: absolute; top: 10px; right: 10px; color: #f44; border-color: #f44;" onclick="removeBlock(${index})">🗑️ 刪除區塊</button>
+                    <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">詞性 (PoS):</div>
+                    <div class="edit-input-group" id="posGroup-${index}">
+                        ${def.pos.map((p, i) => `<span class="tag-input">${p} <span style="cursor:pointer; margin-left:5px;" onclick="removePos(${index}, ${i})">x</span></span>`).join('')}
+                        <button class="btn-action" style="border: 1px solid var(--neon-pink); color: var(--neon-pink);" onclick="addPos(${index})">+ 新增詞性</button>
+                    </div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 10px; margin-bottom: 5px;">中文意思:</div>
+                    <div class="edit-input-group" id="meanGroup-${index}">
+                        ${def.meanings.map((m, i) => `<span class="tag-input" style="border-color: var(--neon-cyan); background: rgba(0,255,255,0.1);">${m} <span style="cursor:pointer; margin-left:5px;" onclick="removeMean(${index}, ${i})">x</span></span>`).join('')}
+                        <button class="btn-action" style="border: 1px solid var(--neon-cyan); color: var(--neon-cyan);" onclick="addMean(${index})">+ 新增中文</button>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 12px; color: #aaa;">例句 (Example):</span>
+                            <button class="btn-action" style="border: 1px solid var(--neon-green); color: var(--neon-green);" onclick="aiGenExample(${index})">🤖 AI 造句</button>
+                        </div>
+                        <textarea id="ex-${index}" style="height: 50px; font-size: 13px;" onchange="updateEx(${index}, this.value)">${def.example}</textarea>
+                    </div>
+                    <div style="margin-top: 10px;"><span style="font-size: 12px; color: #aaa;">出處:</span> <input type="text" id="src-${index}" value="${def.source}" style="padding: 5px; font-size: 13px;" onchange="updateSrc(${index}, this.value)"></div>
+                `;
+                container.appendChild(block);
+            });
+        }
+        
+        window.addPos = (idx) => { const v = prompt('輸入詞性 (如 n.)'); if(v) { editCardData.definitions[idx].pos.push(v); renderEditModal(); }};
+        window.removePos = (idx, pIdx) => { editCardData.definitions[idx].pos.splice(pIdx, 1); renderEditModal(); };
+        window.addMean = (idx) => { const v = prompt('輸入中文意思'); if(v) { editCardData.definitions[idx].meanings.push(v); renderEditModal(); }};
+        window.removeMean = (idx, mIdx) => { editCardData.definitions[idx].meanings.splice(mIdx, 1); renderEditModal(); };
+        window.updateEx = (idx, val) => { editCardData.definitions[idx].example = val; };
+        window.updateSrc = (idx, val) => { editCardData.definitions[idx].source = val; };
+        window.removeBlock = (idx) => { if(confirm('刪除整個區塊？')) { editCardData.definitions.splice(idx, 1); renderEditModal(); }};
+        
+        document.getElementById('btnAddDefBlock').onclick = () => { editCardData.definitions.push({ pos: [], meanings: [], example: '', source: '' }); renderEditModal(); };
+
+        window.aiGenExample = async (idx) => {
+            const apiKey = await fetchApiKey(); if (!apiKey) return;
+            const def = editCardData.definitions[idx];
+            if(def.pos.length===0 || def.meanings.length===0) return alert('請先輸入詞性與中文！');
+            document.getElementById(`ex-${idx}`).value = "🤖 思考中...";
+            const promptText = `用單字 '${editCardData.english}' 的意思 '${def.pos.join(',')} ${def.meanings.join(',')}'，造一個簡單實用的英文例句，並附上中文翻譯。純文字輸出，格式：[英文例句] \\n [中文翻譯]`;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
+                const txt = (await res.json()).candidates[0].content.parts[0].text; editCardData.definitions[idx].example = txt.trim(); renderEditModal();
+            } catch(err) { alert('失敗'); document.getElementById(`ex-${idx}`).value = def.example; }
+        };
+
+        document.getElementById('btnSaveEdit').onclick = () => {
+            update(ref(db, `cards/${username}/${editCardData.id}`), { definitions: editCardData.definitions, chinese: null, pos: null });
+            push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `更新卡片結構: ${editCardData.english}` });
+            document.getElementById('editModal').style.display = 'none';
+        };
+        document.getElementById('closeEditModal').onclick = () => document.getElementById('editModal').style.display = 'none';
+
+        // ================= ✨ AI 注入 & 獨立重試等待區 =================
+        function updateWaitlistUI() {
+            const panel = document.getElementById('waitingListPanel');
+            const list = document.getElementById('waitItems');
+            document.getElementById('waitCount').innerText = waitingList.length;
+            if(waitingList.length > 0) {
+                panel.style.display = 'block';
+                list.innerHTML = waitingList.map(w => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding:6px 0; font-size:13px; color:#ddd;">
+                        <span style="flex:1; word-break:break-all; padding-right:10px;">${w}</span>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-action" style="color:var(--neon-green); border:1px solid var(--neon-green); padding:3px 6px;" onclick="retrySingleWait('${w}')">↻ 試一次</button>
+                            <button class="btn-action" style="color:#f44; border:1px solid #f44; padding:3px 6px;" onclick="removeSingleWait('${w}')">✖ 移除</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else { panel.style.display = 'none'; }
+        }
+
+        window.retrySingleWait = (w) => { processWords([w]); };
+        window.removeSingleWait = (w) => { waitingList = waitingList.filter(item => item !== w); updateWaitlistUI(); };
+
+        async function processWords(wordsToProcess) {
+            const apiKey = await fetchApiKey(); if (!apiKey) return;
             const pArea = document.getElementById('progressArea'), sList = document.getElementById('statusList');
             pArea.style.display = 'block'; sList.innerHTML = '';
-            let total = words.length, completed = 0;
+            let total = wordsToProcess.length, completed = 0;
             document.getElementById('progressBarFill').style.width = '0%'; document.getElementById('progressCountText').innerText = `0 / ${total}`;
 
-            words.forEach(w => { sList.innerHTML += `<div class="status-item" id="st-${w}">${w}: 等待中...</div>`; });
+            wordsToProcess.forEach(w => { sList.innerHTML += `<div class="status-item" id="st-${w}">${w}: 等待中...</div>`; });
 
-            for (let i = 0; i < words.length; i++) {
-                let w = words[i], el = document.getElementById(`st-${w}`);
+            for (let i = 0; i < wordsToProcess.length; i++) {
+                let w = wordsToProcess[i], el = document.getElementById(`st-${w}`);
                 if (currentCards.find(c => c.english.toLowerCase() === w.toLowerCase())) {
                     el.innerHTML = `${w}: ⚠️ 已存在`; el.className = 'status-item status-done';
+                    waitingList = waitingList.filter(item => item !== w); // 如果後來自己手動加了，清單自動移除
                 } else {
                     el.innerHTML = `${w}: 🤖 分析中...`; el.style.color = 'var(--neon-cyan)';
                     try {
-                        const promptText = `你是一位準備台灣「英語科教甄」的單字專家。請極度精簡地分析「${w}」。
-                        1. 絕對精簡：只要「最常考」的中文。
-                        2. 詞性合併：若不同詞性意思相近，合併標籤，例如：(n.)(v.) 考試。
-                        3. 輸出純 JSON：{"corrected_word": "${w}", "pos": "所有詞性(如 n. v.)", "translation": "(n.)(v.) 考試<br>(adj.) 測試的"} `;
+                        const promptText = `請分析英文單字「${w}」。
+                        輸出純 JSON，格式必須為：
+                        {"corrected_word": "${w}", "definitions": [{"pos": ["n.", "v."], "meanings": ["意思1", "意思2"], "example": "", "source": ""}]}`;
                         
-                        // 🎯 完美升級：2026 最強、最穩的 gemini-2.5-flash 模型！
                         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
                         });
                         
-                        // 💥 真實錯誤捕捉保留：如果未來模型再改版，你會馬上知道原因！
-                        if (!res.ok) {
-                            const errText = await res.text();
-                            alert(`🚨 抓到 Google 伺服器的真實錯誤了！\n\n狀態碼: ${res.status}\n錯誤原因:\n${errText}`);
-                            throw new Error('API 拒絕連線');
-                        }
-
+                        if (!res.ok) throw new Error(res.status);
                         const rawText = (await res.json()).candidates[0].content.parts[0].text;
                         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                        if (!jsonMatch) throw new Error('AI 回傳格式損毀');
+                        if (!jsonMatch) throw new Error('FormatErr');
                         
                         const result = JSON.parse(jsonMatch[0]);
-                        
                         await push(ref(db, `cards/${username}`), {
-                            username: username, deck: currentDeck, english: result.corrected_word, pos: result.pos, chinese: result.translation, is_difficult: 'false', timestamp: Date.now()
+                            username: username, deck: currentDeck, english: result.corrected_word, definitions: result.definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now()
                         });
-                        
                         await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `新增單字: ${result.corrected_word}` });
-
                         el.innerHTML = `${w}: ✅ 完成`; el.className = 'status-item status-done';
+                        
+                        waitingList = waitingList.filter(item => item !== w);
                     } catch (err) { 
-                        console.error('分析失敗錯誤碼:', err);
-                        el.innerHTML = `${w}: ❌ 失敗 (${err.message})`; 
-                        el.className = 'status-item status-error'; 
+                        el.innerHTML = `${w}: ❌ 失敗 (加入等待清單)`; el.className = 'status-item status-error'; 
+                        if(!waitingList.includes(w)) waitingList.push(w);
                     }
                 }
+                updateWaitlistUI();
                 completed++;
                 document.getElementById('progressBarFill').style.width = `${(completed/total)*100}%`;
                 document.getElementById('progressCountText').innerText = `${completed} / ${total}`;
-                if (i < words.length - 1) await new Promise(r => setTimeout(r, 2000));
+                if (i < wordsToProcess.length - 1) await new Promise(r => setTimeout(r, 2000));
             }
+        }
+
+        document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
+        document.getElementById('btnBulkAdd').onclick = () => {
+            const raw = document.getElementById('wordInput').value.trim(); if (!raw) return;
+            const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; document.getElementById('wordInput').value = '';
+            processWords(words);
+        };
+        document.getElementById('btnRetryWaitlist').onclick = () => {
+            if(waitingList.length === 0) return;
+            const wordsToRetry = [...waitingList];
+            processWords(wordsToRetry);
         };
 
+        // 導航
         document.getElementById('btnBackToDash').onclick = () => { window.location.href = 'index.html'; };
-        
-        document.getElementById('btnFlashcardMode').onclick = () => {
-            localStorage.setItem('fc_study_filter', filterMode);
-            localStorage.setItem('fc_study_deck', currentDeck); 
-            window.location.href = 'study.html?mode=flashcard';
-        };
-        document.getElementById('btnQuizMode').onclick = () => {
-            localStorage.setItem('fc_study_filter', filterMode);
-            localStorage.setItem('fc_study_deck', currentDeck); 
-            window.location.href = 'study.html?mode=quiz';
-        };
+        document.querySelectorAll('.btn-mode').forEach(btn => {
+            btn.onclick = (e) => {
+                localStorage.setItem('fc_study_filter', filterMode); localStorage.setItem('fc_study_deck', currentDeck); 
+                let targetMode = 'flashcard';
+                if(e.target.id === 'btnQuizMode') targetMode = 'quiz';
+                if(e.target.id === 'btnMcqMode') targetMode = 'mcq';
+                window.location.href = `study.html?mode=${targetMode}`;
+            }
+        });
     </script>
 </body>
 </html>
