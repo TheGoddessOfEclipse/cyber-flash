@@ -26,8 +26,8 @@
         .switch-container { display: flex; gap: 5px; margin-bottom: 10px; }
         .btn-tab { flex: 1; padding: 8px; background: transparent; color: #888; border: 1px solid #333; font-size: 13px; border-radius: 4px;}
         .btn-tab.active { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
-        .btn-tab.active-diff { background: var(--neon-yellow); color: #000; border-color: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
-        .btn-tab.active-imp { background: var(--neon-orange); color: #000; border-color: var(--neon-orange); box-shadow: 0 0 10px var(--neon-orange); }
+        .btn-tab.active-diff { background: var(--neon-orange); color: #000; border-color: var(--neon-orange); box-shadow: 0 0 10px var(--neon-orange); }
+        .btn-tab.active-imp { background: var(--neon-green); color: #000; border-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
 
         #progressArea { font-size: 12px; display: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; border: 1px solid #222;}
         .progress-header { display: flex; justify-content: space-between; color: var(--neon-cyan); margin-bottom: 5px;}
@@ -40,8 +40,8 @@
         .waitlist-panel { margin-top: 10px; border: 1px solid var(--neon-orange); padding: 10px; border-radius: 4px; display: none; background: rgba(255, 140, 0, 0.05); }
         
         .center-panel { border-top: 2px solid #fff; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 20px 10px; }
-        .center-panel.difficult-mode { border-top-color: var(--neon-yellow); }
-        .center-panel.important-mode { border-top-color: var(--neon-orange); }
+        .center-panel.difficult-mode { border-top-color: var(--neon-orange); }
+        .center-panel.important-mode { border-top-color: var(--neon-green); }
         .center-panel::-webkit-scrollbar { width: 6px; } .center-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
         
         .card-container { width: 100%; max-width: 360px; min-height: 160px; perspective: 1000px; cursor: pointer; flex-shrink: 0; margin-bottom: 20px; }
@@ -50,8 +50,8 @@
         .card-front, .card-back { width: 100%; height: 100%; min-height: 160px; position: absolute; backface-visibility: hidden; border-radius: 8px; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; background-color: rgba(15, 20, 30, 0.95); }
         .card-front { border: 1px solid var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); align-items: center; justify-content: center;}
         .card-back { border: 1px solid var(--neon-pink); transform: rotateY(180deg); align-items: flex-start; justify-content: flex-start; padding: 20px 20px 45px 20px;}
-        .card-front.diff-glow { border-color: var(--neon-yellow); box-shadow: 0 0 10px rgba(255, 251, 0, 0.2); }
-        .card-front.imp-glow { border-color: var(--neon-orange); box-shadow: 0 0 15px rgba(255, 140, 0, 0.4); }
+        .card-front.diff-glow { border-color: var(--neon-orange); box-shadow: 0 0 10px rgba(255, 140, 0, 0.3); }
+        .card-front.imp-glow { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); }
         .word-text { font-size: 26px; font-weight: bold; color: #fff; }
         .translation-text { font-size: 14px; line-height: 1.5; color: #e2e8f0; width: 100%; overflow-y: auto; margin-bottom: 5px; }
         .translation-text::-webkit-scrollbar { width: 2px; } .translation-text::-webkit-scrollbar-thumb { background: var(--neon-pink); }
@@ -90,8 +90,8 @@
             <div style="font-size: 12px; color: #888; margin-bottom: 5px;">[ 檢視模式 ]</div>
             <div class="switch-container">
                 <button class="btn-tab active" id="tabAll">普通單字表</button>
-                <button class="btn-tab" id="tabDiff">⚠️ 易錯</button>
-                <button class="btn-tab" id="tabImp">🔥 易考</button>
+                <button class="btn-tab" id="tabDiff">⚠️ 未精熟</button>
+                <button class="btn-tab" id="tabImp">✅ 已精熟</button>
             </div>
 
             <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
@@ -127,7 +127,7 @@
         <div class="right-panel panel">
             <div class="mode-title">TRAINING MODES</div>
             <div style="font-size: 12px; color: var(--neon-yellow); margin-bottom: 15px; text-align: center;" id="trainingScopeTxt">目前範圍：所有單字</div>
-            <button class="btn-primary btn-mode" id="btnFlashcardMode">🃏 單字卡翻轉</button>
+            <button class="btn-primary btn-mode" id="btnFlashcardMode">🃏 單字卡 Swipe</button>
             <button class="btn-primary btn-mode" id="btnQuizMode">📝 拼字填空測驗</button>
             <button class="btn-primary btn-mode" id="btnMcqMode" style="border-color: var(--neon-orange); color: var(--neon-orange);">🕹️ 四選一挑戰</button>
         </div>
@@ -229,8 +229,8 @@
             if(filterMode === 'important') grid.classList.add('important-mode');
             
             let scopeTxt = '目前範圍：所有單字';
-            if(filterMode === 'difficult') scopeTxt = '目前範圍：⚠️ 僅限易錯單字';
-            if(filterMode === 'important') scopeTxt = '目前範圍：🔥 僅限易考重點';
+            if(filterMode === 'difficult') scopeTxt = '目前範圍：⚠️ 僅限未精熟單字';
+            if(filterMode === 'important') scopeTxt = '目前範圍：✅ 僅限已精熟單字';
             document.getElementById('trainingScopeTxt').innerText = scopeTxt;
             
             renderCards();
@@ -298,8 +298,8 @@
                         <div class="card-back">
                             <div class="translation-text">${backHtml}</div>
                             <div class="card-actions" style="display: flex; gap: 5px;">
-                                <button class="action-icon btn-imp" style="${isImp ? 'color: var(--neon-orange); border-color: var(--neon-orange);' : ''}">${isImp ? '❌ 移出' : '🔥 易考'}</button>
-                                <button class="action-icon btn-diff" style="${isDiff ? 'color: var(--neon-yellow); border-color: var(--neon-yellow);' : ''}">${isDiff ? '❌ 移出' : '⭐ 易錯'}</button>
+                                <button class="action-icon btn-imp" style="${isImp ? 'color: var(--neon-green); border-color: var(--neon-green);' : ''}">${isImp ? '❌ 移出' : '✅ 已精熟'}</button>
+                                <button class="action-icon btn-diff" style="${isDiff ? 'color: var(--neon-orange); border-color: var(--neon-orange);' : ''}">${isDiff ? '❌ 移出' : '⚠️ 未精熟'}</button>
                                 <button class="action-icon btn-edit">✏️</button>
                                 <button class="action-icon btn-del">🗑️</button>
                             </div>
@@ -384,8 +384,7 @@
         };
         document.getElementById('closeEditModal').onclick = () => document.getElementById('editModal').style.display = 'none';
 
-
-        // ================= ✨ 📊 Excel 批量匯入邏輯 ✨ =================
+        // ================= Excel 批量匯入邏輯 =================
         document.getElementById('btnOpenExcelModal').onclick = () => document.getElementById('excelModal').style.display = 'flex';
         document.getElementById('closeExcelModal').onclick = () => document.getElementById('excelModal').style.display = 'none';
 
@@ -394,8 +393,7 @@
             if (!raw) return;
             const rows = raw.split('\n');
             const progress = document.getElementById('excelProgress');
-            let successCount = 0;
-            let skipCount = 0;
+            let successCount = 0; let skipCount = 0;
             
             document.getElementById('btnExecExcelImport').disabled = true;
             progress.innerText = '高速寫入資料庫中...';
@@ -403,34 +401,21 @@
 
             for (let row of rows) {
                 const cols = row.split('\t');
-                // 如果沒有 Tab，嘗試用空格切割 (防呆機制)
                 if (cols.length < 2) {
                     const spaceCols = row.trim().split(/\s+/);
-                    if (spaceCols.length >= 2 && !row.includes('\t')) {
-                        cols[0] = spaceCols[0];
-                        cols[1] = spaceCols.slice(1).join(' ');
-                    } else { continue; }
+                    if (spaceCols.length >= 2 && !row.includes('\t')) { cols[0] = spaceCols[0]; cols[1] = spaceCols.slice(1).join(' '); } else { continue; }
                 }
 
-                const word = cols[0].trim();
-                const meaningStr = cols[1].trim();
+                const word = cols[0].trim(); const meaningStr = cols[1].trim();
                 if (!word || !meaningStr) continue;
 
-                // 防重複
-                if (currentCards.find(c => c.english.toLowerCase() === word.toLowerCase())) {
-                    skipCount++; continue;
-                }
+                if (currentCards.find(c => c.english.toLowerCase() === word.toLowerCase())) { skipCount++; continue; }
 
                 const posStr = cols.length > 2 ? cols[2].trim() : '';
                 const exStr = cols.length > 3 ? cols[3].trim() : '';
                 const srcStr = cols.length > 4 ? cols[4].trim() : '';
 
-                const definitions = [{
-                    pos: posStr ? [posStr] : [],
-                    meanings: [meaningStr],
-                    example: exStr,
-                    source: srcStr
-                }];
+                const definitions = [{ pos: posStr ? [posStr] : [], meanings: [meaningStr], example: exStr, source: srcStr }];
 
                 await push(ref(db, `cards/${username}`), {
                     username: username, deck: currentDeck, english: word, 
@@ -439,23 +424,17 @@
                 successCount++;
             }
             
-            if (successCount > 0) {
-                await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `Excel 批量匯入了 ${successCount} 個單字` });
-            }
+            if (successCount > 0) { await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `Excel 批量匯入了 ${successCount} 個單字` }); }
 
             progress.innerText = `✅ 匯入完成！成功: ${successCount} 筆，略過重複/無效: ${skipCount} 筆`;
             progress.style.color = 'var(--neon-green)';
             document.getElementById('excelInput').value = '';
             document.getElementById('btnExecExcelImport').disabled = false;
             
-            setTimeout(() => {
-                document.getElementById('excelModal').style.display = 'none';
-                progress.innerText = '';
-            }, 3500);
+            setTimeout(() => { document.getElementById('excelModal').style.display = 'none'; progress.innerText = ''; }, 3500);
         };
 
-
-        // ================= ✨ AI 注入 & 獨立重試等待區 =================
+        // ================= AI 注入 & 獨立重試等待區 =================
         function updateWaitlistUI() {
             const panel = document.getElementById('waitingListPanel');
             const list = document.getElementById('waitItems');

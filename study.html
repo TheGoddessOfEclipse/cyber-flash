@@ -6,9 +6,9 @@
     <title>CYBER-FLASH: 訓練模組</title>
     <style>
         :root { --neon-cyan: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --dark-bg: #090a0f; --text-main: #e0e6ed; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 255, 0.08) 1px, transparent 1px); background-size: 40px 40px; margin: 0; padding: 20px; color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh;}
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 255, 0.08) 1px, transparent 1px); background-size: 40px 40px; margin: 0; padding: 20px; color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         .nav-bar { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 15px; margin-bottom: 40px; flex-wrap: wrap; gap: 10px;}
-        .mode-title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow), var(--neon-cyan)); background-size: 300%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: textGlow 5s linear infinite; text-shadow: 0 0 10px rgba(255,255,255,0.2);}
+        .mode-title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow), var(--neon-cyan)); background-size: 300%; background-clip: text; -webkit-background-clip: text; color: transparent; animation: textGlow 5s linear infinite; text-shadow: 0 0 10px rgba(255,255,255,0.2);}
         @keyframes textGlow { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
         button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         select { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid var(--neon-cyan); border-radius: 4px; padding: 8px; font-size: 14px; outline: none; }
@@ -19,7 +19,7 @@
         .active { display: block; animation: bootUp 0.5s ease-out; }
         @keyframes bootUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .big-card { width: 100%; height: 350px; perspective: 1000px; cursor: pointer; margin-bottom: 30px; }
+        .big-card { width: 100%; height: 350px; perspective: 1000px; cursor: pointer; margin-bottom: 20px; touch-action: pan-y; }
         .card-inner { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
         .big-card.flipped .card-inner { transform: rotateY(180deg); }
         .card-front, .card-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; background-color: rgba(10, 12, 18, 0.95); }
@@ -28,8 +28,8 @@
         .card-back { border: 2px solid var(--neon-yellow); box-shadow: 0 0 25px rgba(255, 251, 0, 0.15); transform: rotateY(180deg); padding: 40px 20px;}
         .big-translation { font-size: 24px; font-weight: bold; line-height: 1.6; color: #fff; text-align: left; width: 100%; overflow-y: auto; max-height: 100%; }
         
-        .controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .progress-text { margin-top: 25px; color: var(--neon-cyan); font-size: 16px; letter-spacing: 3px; font-family: monospace;}
+        .controls { display: flex; justify-content: space-between; gap: 15px; width: 100%; max-width: 400px; margin: 0 auto; }
+        .progress-text { margin-top: 15px; color: var(--neon-cyan); font-size: 14px; letter-spacing: 3px; font-family: monospace;}
 
         .quiz-box { background: rgba(10, 15, 25, 0.8); border: 1px solid #333; border-top: 3px solid var(--neon-pink); padding: 40px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);}
         .quiz-question { font-size: 42px; font-weight: bold; margin-bottom: 30px; color: #fff; text-shadow: 0 0 15px var(--neon-pink); letter-spacing: 1px;}
@@ -62,6 +62,8 @@
     <div id="loading" style="color: var(--neon-cyan); font-size: 18px;">[ 連線至雲端資料庫取得題庫中... ]</div>
 
     <div id="flashcardMode" class="study-container">
+        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">💡 提示：點擊卡片翻面，左右滑動進行分類</div>
+        
         <div class="big-card" id="studyCard">
             <div class="card-inner">
                 <div class="card-front">
@@ -73,12 +75,16 @@
                 </div>
             </div>
         </div>
-        <div class="controls" style="align-items: center;">
-            <button class="btn-action btn-orange" id="btnPrevCard">◄</button>
-            <button id="fcImpBtn" class="btn-action" style="font-size: 16px; padding: 12px 20px; width: 110px; border: 1px dashed #555; color: #aaa;">🔥 易考</button>
-            <button id="fcDiffBtn" class="btn-action" style="font-size: 16px; padding: 12px 20px; width: 110px; border: 1px dashed #555; color: #aaa;">⭐ 易錯</button>
-            <button class="btn-action btn-green" id="btnNextCard">►</button>
+
+        <div class="controls">
+            <button class="btn-action btn-orange" id="btnSwipeLeft" style="flex: 1; padding: 15px; font-size: 16px;">◄ 標為未精熟</button>
+            <button class="btn-action btn-green" id="btnSwipeRight" style="flex: 1; padding: 15px; font-size: 16px;">標為已精熟 ►</button>
         </div>
+        
+        <div style="margin-top: 15px;">
+            <button class="btn-action" id="btnPrevCard" style="font-size: 12px; padding: 5px 15px; color: #aaa; border: 1px solid #444;">↺ 返回上一張</button>
+        </div>
+
         <div class="progress-text" id="fcProgress">SEQ: 0 / 0</div>
     </div>
 
@@ -112,7 +118,7 @@
             <div class="score-text" id="finalScoreText">任務結算</div>
             <div id="resultList" style="max-height: 350px; overflow-y: auto; margin-bottom: 20px;"></div>
             <div style="text-align: center;">
-                <button class="btn-action btn-orange" id="btnRetryWrong">🔄 錯題重作 / 重新閱覽</button>
+                <button class="btn-action btn-orange" id="btnRetryWrong">🔄 重新閱覽 / 錯題重作</button>
             </div>
         </div>
     </div>
@@ -150,7 +156,7 @@
                 if (!snapshot.exists()) throw new Error('No Data');
                 let fetchedData = Object.entries(snapshot.val()).map(([id, val]) => ({ id, ...val })).filter(c => c.deck === deck);
                 
-                // ✨ 支援讀取「易考」或「易錯」分類
+                // 讀取過濾條件
                 if (filterMode === 'difficult') fetchedData = fetchedData.filter(c => String(c.is_difficult).toLowerCase() === 'true');
                 if (filterMode === 'important') fetchedData = fetchedData.filter(c => String(c.is_important).toLowerCase() === 'true');
                 
@@ -181,6 +187,7 @@
             else if (mode === 'mcq') { document.getElementById('mcqMode').classList.add('active'); quizHistory = []; loadMcq(); }
         }
 
+        // ================= ✨ 1. 閃卡模式 (Tinder Swipe 滑動分類) ✨ =================
         function loadFlashcard() {
             const card = cards[currentIndex]; document.getElementById('studyCard').classList.remove('flipped');
             document.getElementById('fcWord').innerText = card.english;
@@ -199,27 +206,62 @@
             document.getElementById('fcTranslation').innerHTML = backHtml;
             document.getElementById('fcProgress').innerText = `SEQ: ${currentIndex + 1} / ${cards.length}`;
             
-            // ✨ 控制雙按鈕
-            const diffBtn = document.getElementById('fcDiffBtn');
-            diffBtn.innerText = String(card.is_difficult)==='true' ? '❌ 移出易錯' : '⭐ 易錯';
-            diffBtn.style.color = String(card.is_difficult)==='true' ? '#aaa' : 'var(--neon-yellow)';
-            
-            const impBtn = document.getElementById('fcImpBtn');
-            impBtn.innerText = String(card.is_important)==='true' ? '❌ 移出易考' : '🔥 易考';
-            impBtn.style.color = String(card.is_important)==='true' ? '#aaa' : 'var(--neon-orange)';
-
             setTimeout(() => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u); }, 200);
         }
         
-        document.getElementById('studyCard').onclick = (e) => { if(e.target.tagName !== 'BUTTON') document.getElementById('studyCard').classList.toggle('flipped'); };
-        document.getElementById('btnPlaySoundFront').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(cards[currentIndex].english); u.lang = 'en-US'; speechSynthesis.speak(u); };
-        document.getElementById('btnPrevCard').onclick = () => { if (currentIndex > 0) { currentIndex--; loadFlashcard(); } };
-        document.getElementById('btnNextCard').onclick = () => { if (currentIndex >= cards.length - 1) showResults(); else { currentIndex++; loadFlashcard(); } };
-        
-        // ✨ 按鈕更新資料庫
-        document.getElementById('fcDiffBtn').onclick = (e) => { e.stopPropagation(); const c = cards[currentIndex]; c.is_difficult = String(c.is_difficult)==='true'?'false':'true'; loadFlashcard(); update(ref(db, `cards/${username}/${c.id}`), { is_difficult: c.is_difficult }); };
-        document.getElementById('fcImpBtn').onclick = (e) => { e.stopPropagation(); const c = cards[currentIndex]; c.is_important = String(c.is_important)==='true'?'false':'true'; loadFlashcard(); update(ref(db, `cards/${username}/${c.id}`), { is_important: c.is_important }); };
+        // 分類與跳下一張邏輯
+        function markCard(status) {
+            const c = cards[currentIndex];
+            let isDiff = 'false', isImp = 'false';
+            
+            if (status === 'mastered') isImp = 'true'; // 已精熟 (向右)
+            else if (status === 'learning') isDiff = 'true'; // 未精熟 (向左)
+            
+            // 背景寫入資料庫
+            c.is_difficult = isDiff; c.is_important = isImp;
+            update(ref(db, `cards/${username}/${c.id}`), { is_difficult: isDiff, is_important: isImp });
+            
+            if (currentIndex >= cards.length - 1) showResults(); 
+            else { currentIndex++; loadFlashcard(); }
+        }
 
+        // 按鈕點擊
+        document.getElementById('btnSwipeRight').onclick = (e) => { e.stopPropagation(); markCard('mastered'); };
+        document.getElementById('btnSwipeLeft').onclick = (e) => { e.stopPropagation(); markCard('learning'); };
+        document.getElementById('btnPrevCard').onclick = () => { if (currentIndex > 0) { currentIndex--; loadFlashcard(); } };
+
+        // 手機觸控滑動 (Swipe) 事件綁定
+        let touchstartX = 0;
+        let touchendX = 0;
+        let preventFlip = false;
+        const studyCard = document.getElementById('studyCard');
+
+        studyCard.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        studyCard.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            
+            // 如果滑動距離超過 50px，判定為 Swipe，不觸發翻面
+            if (Math.abs(touchendX - touchstartX) > 50) {
+                preventFlip = true;
+                if (touchendX < touchstartX) markCard('learning'); // 向左滑 -> 未精熟
+                else markCard('mastered'); // 向右滑 -> 已精熟
+                
+                setTimeout(() => { preventFlip = false; }, 300); // 短暫延遲後恢復翻面功能
+            }
+        });
+
+        // 點擊翻面 (若剛才是在滑動，則取消翻面動作)
+        studyCard.onclick = (e) => { 
+            if (preventFlip) return;
+            if (e.target.tagName !== 'BUTTON') studyCard.classList.toggle('flipped'); 
+        };
+        
+        document.getElementById('btnPlaySoundFront').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(cards[currentIndex].english); u.lang = 'en-US'; speechSynthesis.speak(u); };
+
+        // ================= 2. 拼字填空模式邏輯 =================
         function loadQuiz() {
             const inputEl = document.getElementById('quizInput'); inputEl.value = ''; inputEl.disabled = false;
             document.getElementById('quizFeedback').innerText = ''; document.getElementById('quizWord').innerText = cards[currentIndex].english;
@@ -240,6 +282,7 @@
         };
         document.getElementById('btnSkip').onclick = () => { quizHistory.push({ word: cards[currentIndex].english, userAns: "(跳過)", correctAns: getCardMeaningStr(cards[currentIndex]), isCorrect: false }); currentIndex++; if(currentIndex >= cards.length) showResults(); else loadQuiz(); };
 
+        // ================= 3. 四選一模式邏輯 =================
         function loadMcq() {
             const card = cards[currentIndex]; mcqCorrectAnswer = getCardMeaningStr(card);
             document.getElementById('mcqFeedback').innerText = '';
@@ -280,6 +323,7 @@
         document.getElementById('btnNextMcq').onclick = nextMcqQuestion;
         function nextMcqQuestion() { currentIndex++; if(currentIndex >= cards.length) showResults(); else loadMcq(); }
 
+        // ================= 結算與日誌上傳 =================
         function showResults() {
             document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
             document.getElementById('resultMode').classList.add('active');
@@ -287,7 +331,7 @@
             
             if(mode === 'flashcard') {
                 document.getElementById('finalScoreText').innerText = `閱覽完畢`;
-                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:18px;">總共複習了 ${cards.length} 個單字。</div>`;
+                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:18px;">總共複習了 ${cards.length} 個單字。<br><span style="font-size:14px; color:#666;">（所有分類紀錄已自動儲存至雲端）</span></div>`;
             } else {
                 let correctCount = quizHistory.filter(q => q.isCorrect).length;
                 document.getElementById('finalScoreText').innerText = `任務結算: ${correctCount} / ${quizHistory.length} 成功`;
@@ -312,15 +356,14 @@
             const durationMs = Date.now() - studyStartTime;
             const sortLabelText = document.getElementById('studySortFilter').options[document.getElementById('studySortFilter').selectedIndex].text.split(' ')[1];
             
-            let typeName = mode === 'flashcard' ? '單字卡瀏覽' : (mode === 'mcq' ? '四選一測驗' : '英翻中測驗');
+            let typeName = mode === 'flashcard' ? '單字卡Swipe' : (mode === 'mcq' ? '四選一測驗' : '拼字填空測驗');
             let type = `${typeName} (${sortLabelText})`;
             
-            // ✨ 讓日誌精準紀錄當下是在什麼模式
             let loggedDeck = deck;
-            if(filterMode === 'difficult') loggedDeck += ' (易錯模式)';
-            if(filterMode === 'important') loggedDeck += ' (易考重點)';
+            if(filterMode === 'difficult') loggedDeck += ' (未精熟)';
+            if(filterMode === 'important') loggedDeck += ' (已精熟)';
             
-            let remarks = mode === 'flashcard' ? `瀏覽了 ${cards.length} 個字` : `正確率: ${quizHistory.filter(q=>q.isCorrect).length}/${quizHistory.length}`;
+            let remarks = mode === 'flashcard' ? `分類學習了 ${cards.length} 個字` : `正確率: ${quizHistory.filter(q=>q.isCorrect).length}/${quizHistory.length}`;
             
             try { await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: durationMs, deck: loggedDeck, type: type, remarks: remarks }); } catch (e) {}
             window.location.href = 'deck.html';
