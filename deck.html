@@ -95,8 +95,12 @@
             </div>
 
             <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
-            <textarea id="wordInput" placeholder="輸入單字...&#10;(按 Enter 直接送出)"></textarea>
-            <button class="btn-primary" id="btnBulkAdd">⚡ 注入數據</button>
+            <textarea id="wordInput" placeholder="輸入單字交給 AI 幫你找意思...&#10;(按 Enter 直接送出)"></textarea>
+            
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-primary" id="btnBulkAdd" style="flex: 2; margin: 0;">⚡ AI 智能分析</button>
+                <button class="btn-secondary" id="btnOpenExcelModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-yellow); border-color: var(--neon-yellow);">📊 Excel 貼上</button>
+            </div>
 
             <div id="progressArea" style="margin-top: 10px;">
                 <div class="progress-header"><span>處理進度</span><span id="progressCountText">0/0</span></div>
@@ -138,6 +142,29 @@
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-primary" id="btnSaveEdit" style="flex: 2; margin: 0;">💾 儲存修改</button>
             </div>
+        </div>
+    </div>
+
+    <div id="excelModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-btn" id="closeExcelModal">&times;</span>
+            <h3 style="color: var(--neon-yellow); margin-top: 0; border-bottom: 1px dashed #555; padding-bottom: 10px;">📊 Excel 批量急速匯入</h3>
+            <div style="font-size: 13px; color: #aaa; margin-bottom: 15px; line-height: 1.6;">
+                請在 Excel 圈選資料後，直接「複製 ➔ 貼上」至下方框框。<br>
+                <span style="color: var(--neon-pink); font-weight: bold;">⚠️ 欄位順序必須為 (系統會自動辨識欄位間的 Tab 鍵)：</span><br>
+                <div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; margin-top: 5px; color: #e0e6ed;">
+                    第 1 欄：英文單字 <span style="color:var(--neon-pink)">(必填)</span><br>
+                    第 2 欄：中文意思 <span style="color:var(--neon-pink)">(必填)</span><br>
+                    第 3 欄：詞性 <span style="color:#888">(選填，如 n.)</span><br>
+                    第 4 欄：例句 <span style="color:#888">(選填)</span><br>
+                    第 5 欄：出處 <span style="color:#888">(選填)</span>
+                </div>
+            </div>
+            <textarea id="excelInput" style="height: 200px; width: 100%; font-family: monospace; white-space: pre; background: #111; color: var(--neon-green); border: 1px solid var(--neon-green); padding: 10px; outline: none; box-sizing: border-box; resize: none;" placeholder="Apple&#9;蘋果&#9;n.&#9;This is an apple.&#9;Lesson 1&#10;Banana&#9;香蕉&#9;n.&#9;&#9;Lesson 1"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-primary" id="btnExecExcelImport" style="width: 100%; margin: 0; border-color: var(--neon-green); color: var(--neon-green);">🚀 確認並執行匯入</button>
+            </div>
+            <div id="excelProgress" style="margin-top: 10px; color: var(--neon-green); font-weight: bold; text-align: center;"></div>
         </div>
     </div>
 
@@ -357,6 +384,77 @@
         };
         document.getElementById('closeEditModal').onclick = () => document.getElementById('editModal').style.display = 'none';
 
+
+        // ================= ✨ 📊 Excel 批量匯入邏輯 ✨ =================
+        document.getElementById('btnOpenExcelModal').onclick = () => document.getElementById('excelModal').style.display = 'flex';
+        document.getElementById('closeExcelModal').onclick = () => document.getElementById('excelModal').style.display = 'none';
+
+        document.getElementById('btnExecExcelImport').onclick = async () => {
+            const raw = document.getElementById('excelInput').value.trim();
+            if (!raw) return;
+            const rows = raw.split('\n');
+            const progress = document.getElementById('excelProgress');
+            let successCount = 0;
+            let skipCount = 0;
+            
+            document.getElementById('btnExecExcelImport').disabled = true;
+            progress.innerText = '高速寫入資料庫中...';
+            progress.style.color = 'var(--neon-yellow)';
+
+            for (let row of rows) {
+                const cols = row.split('\t');
+                // 如果沒有 Tab，嘗試用空格切割 (防呆機制)
+                if (cols.length < 2) {
+                    const spaceCols = row.trim().split(/\s+/);
+                    if (spaceCols.length >= 2 && !row.includes('\t')) {
+                        cols[0] = spaceCols[0];
+                        cols[1] = spaceCols.slice(1).join(' ');
+                    } else { continue; }
+                }
+
+                const word = cols[0].trim();
+                const meaningStr = cols[1].trim();
+                if (!word || !meaningStr) continue;
+
+                // 防重複
+                if (currentCards.find(c => c.english.toLowerCase() === word.toLowerCase())) {
+                    skipCount++; continue;
+                }
+
+                const posStr = cols.length > 2 ? cols[2].trim() : '';
+                const exStr = cols.length > 3 ? cols[3].trim() : '';
+                const srcStr = cols.length > 4 ? cols[4].trim() : '';
+
+                const definitions = [{
+                    pos: posStr ? [posStr] : [],
+                    meanings: [meaningStr],
+                    example: exStr,
+                    source: srcStr
+                }];
+
+                await push(ref(db, `cards/${username}`), {
+                    username: username, deck: currentDeck, english: word, 
+                    definitions: definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now()
+                });
+                successCount++;
+            }
+            
+            if (successCount > 0) {
+                await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `Excel 批量匯入了 ${successCount} 個單字` });
+            }
+
+            progress.innerText = `✅ 匯入完成！成功: ${successCount} 筆，略過重複/無效: ${skipCount} 筆`;
+            progress.style.color = 'var(--neon-green)';
+            document.getElementById('excelInput').value = '';
+            document.getElementById('btnExecExcelImport').disabled = false;
+            
+            setTimeout(() => {
+                document.getElementById('excelModal').style.display = 'none';
+                progress.innerText = '';
+            }, 3500);
+        };
+
+
         // ================= ✨ AI 注入 & 獨立重試等待區 =================
         function updateWaitlistUI() {
             const panel = document.getElementById('waitingListPanel');
@@ -392,7 +490,7 @@
                 let w = wordsToProcess[i], el = document.getElementById(`st-${w}`);
                 if (currentCards.find(c => c.english.toLowerCase() === w.toLowerCase())) {
                     el.innerHTML = `${w}: ⚠️ 已存在`; el.className = 'status-item status-done';
-                    waitingList = waitingList.filter(item => item !== w); // 如果後來自己手動加了，清單自動移除
+                    waitingList = waitingList.filter(item => item !== w); 
                 } else {
                     el.innerHTML = `${w}: 🤖 分析中...`; el.style.color = 'var(--neon-cyan)';
                     try {
