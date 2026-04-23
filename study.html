@@ -86,6 +86,12 @@
         </div>
 
         <div class="progress-text" id="fcProgress">SEQ: 0 / 0</div>
+
+        <div style="margin-top: 30px; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto; padding-top: 20px; border-top: 1px dashed #333;">
+            <div style="font-size: 12px; color: #888; margin-bottom: 8px; text-align: left;">[ 快速跳轉指定單字 ]</div>
+            <select id="jumpToWordList" style="width: 100%; font-size: 16px; padding: 12px; background: rgba(0,0,0,0.8); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); cursor: pointer; text-align: left; border-radius: 4px;">
+            </select>
+        </div>
     </div>
 
     <div id="quizMode" class="study-container">
@@ -180,14 +186,40 @@
             currentIndex = 0; startMode();
         };
 
+        // ✨ 更新單字跳轉清單 ✨
+        function updateJumpList() {
+            const jumpSelect = document.getElementById('jumpToWordList');
+            if (!jumpSelect) return;
+            jumpSelect.innerHTML = '';
+            cards.forEach((c, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                let statusIcon = '';
+                if (String(c.is_difficult).toLowerCase() === 'true') statusIcon = '⚠️ ';
+                if (String(c.is_important).toLowerCase() === 'true') statusIcon = '✅ ';
+                opt.innerText = `${i + 1}. ${statusIcon}${c.english}`;
+                jumpSelect.appendChild(opt);
+            });
+        }
+
+        // 選擇跳轉事件
+        document.getElementById('jumpToWordList').onchange = (e) => {
+            currentIndex = parseInt(e.target.value);
+            loadFlashcard();
+        };
+
         function startMode() {
             document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
-            if (mode === 'flashcard') { document.getElementById('flashcardMode').classList.add('active'); loadFlashcard(); }
+            if (mode === 'flashcard') { 
+                document.getElementById('flashcardMode').classList.add('active'); 
+                updateJumpList(); // 排序改變時，更新跳轉清單
+                loadFlashcard(); 
+            }
             else if (mode === 'quiz') { document.getElementById('quizMode').classList.add('active'); quizHistory = []; loadQuiz(); }
             else if (mode === 'mcq') { document.getElementById('mcqMode').classList.add('active'); quizHistory = []; loadMcq(); }
         }
 
-        // ================= ✨ 1. 閃卡模式 (Tinder Swipe 滑動分類) ✨ =================
+        // ================= 1. 閃卡模式 =================
         function loadFlashcard() {
             const card = cards[currentIndex]; document.getElementById('studyCard').classList.remove('flipped');
             document.getElementById('fcWord').innerText = card.english;
@@ -206,6 +238,10 @@
             document.getElementById('fcTranslation').innerHTML = backHtml;
             document.getElementById('fcProgress').innerText = `SEQ: ${currentIndex + 1} / ${cards.length}`;
             
+            // 更新跳轉清單的目前選項
+            const jumpSelect = document.getElementById('jumpToWordList');
+            if(jumpSelect) jumpSelect.value = currentIndex;
+
             setTimeout(() => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u); }, 200);
         }
         
@@ -214,46 +250,34 @@
             const c = cards[currentIndex];
             let isDiff = 'false', isImp = 'false';
             
-            if (status === 'mastered') isImp = 'true'; // 已精熟 (向右)
-            else if (status === 'learning') isDiff = 'true'; // 未精熟 (向左)
+            if (status === 'mastered') isImp = 'true'; // 已精熟
+            else if (status === 'learning') isDiff = 'true'; // 未精熟
             
-            // 背景寫入資料庫
             c.is_difficult = isDiff; c.is_important = isImp;
             update(ref(db, `cards/${username}/${c.id}`), { is_difficult: isDiff, is_important: isImp });
+            
+            updateJumpList(); // 標記狀態改變後，刷新跳轉清單上的 icon
             
             if (currentIndex >= cards.length - 1) showResults(); 
             else { currentIndex++; loadFlashcard(); }
         }
 
-        // 按鈕點擊
         document.getElementById('btnSwipeRight').onclick = (e) => { e.stopPropagation(); markCard('mastered'); };
         document.getElementById('btnSwipeLeft').onclick = (e) => { e.stopPropagation(); markCard('learning'); };
         document.getElementById('btnPrevCard').onclick = () => { if (currentIndex > 0) { currentIndex--; loadFlashcard(); } };
 
-        // 手機觸控滑動 (Swipe) 事件綁定
-        let touchstartX = 0;
-        let touchendX = 0;
-        let preventFlip = false;
+        let touchstartX = 0; let touchendX = 0; let preventFlip = false;
         const studyCard = document.getElementById('studyCard');
-
-        studyCard.addEventListener('touchstart', e => {
-            touchstartX = e.changedTouches[0].screenX;
-        }, {passive: true});
-
+        studyCard.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
         studyCard.addEventListener('touchend', e => {
             touchendX = e.changedTouches[0].screenX;
-            
-            // 如果滑動距離超過 50px，判定為 Swipe，不觸發翻面
             if (Math.abs(touchendX - touchstartX) > 50) {
                 preventFlip = true;
-                if (touchendX < touchstartX) markCard('learning'); // 向左滑 -> 未精熟
-                else markCard('mastered'); // 向右滑 -> 已精熟
-                
-                setTimeout(() => { preventFlip = false; }, 300); // 短暫延遲後恢復翻面功能
+                if (touchendX < touchstartX) markCard('learning'); else markCard('mastered');
+                setTimeout(() => { preventFlip = false; }, 300); 
             }
         });
 
-        // 點擊翻面 (若剛才是在滑動，則取消翻面動作)
         studyCard.onclick = (e) => { 
             if (preventFlip) return;
             if (e.target.tagName !== 'BUTTON') studyCard.classList.toggle('flipped'); 
@@ -261,7 +285,7 @@
         
         document.getElementById('btnPlaySoundFront').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(cards[currentIndex].english); u.lang = 'en-US'; speechSynthesis.speak(u); };
 
-        // ================= 2. 拼字填空模式邏輯 =================
+        // ================= 2. 拼字填空模式 =================
         function loadQuiz() {
             const inputEl = document.getElementById('quizInput'); inputEl.value = ''; inputEl.disabled = false;
             document.getElementById('quizFeedback').innerText = ''; document.getElementById('quizWord').innerText = cards[currentIndex].english;
@@ -282,7 +306,7 @@
         };
         document.getElementById('btnSkip').onclick = () => { quizHistory.push({ word: cards[currentIndex].english, userAns: "(跳過)", correctAns: getCardMeaningStr(cards[currentIndex]), isCorrect: false }); currentIndex++; if(currentIndex >= cards.length) showResults(); else loadQuiz(); };
 
-        // ================= 3. 四選一模式邏輯 =================
+        // ================= 3. 四選一模式 =================
         function loadMcq() {
             const card = cards[currentIndex]; mcqCorrectAnswer = getCardMeaningStr(card);
             document.getElementById('mcqFeedback').innerText = '';
@@ -323,7 +347,7 @@
         document.getElementById('btnNextMcq').onclick = nextMcqQuestion;
         function nextMcqQuestion() { currentIndex++; if(currentIndex >= cards.length) showResults(); else loadMcq(); }
 
-        // ================= 結算與日誌上傳 =================
+        // ================= 結算與日誌 =================
         function showResults() {
             document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
             document.getElementById('resultMode').classList.add('active');
