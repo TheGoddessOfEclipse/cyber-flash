@@ -98,8 +98,9 @@
             <textarea id="wordInput" placeholder="輸入單字交給 AI 幫你找意思...&#10;(按 Enter 直接送出)"></textarea>
             
             <div style="display: flex; gap: 5px;">
-                <button class="btn-primary" id="btnBulkAdd" style="flex: 2; margin: 0;">⚡ AI 智能分析</button>
-                <button class="btn-secondary" id="btnOpenExcelModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-yellow); border-color: var(--neon-yellow);">📊 Excel 貼上</button>
+                <button class="btn-primary" id="btnBulkAdd" style="flex: 2; margin: 0; padding: 10px 5px;">⚡ AI 智能</button>
+                <button class="btn-secondary" id="btnOpenExcelModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-yellow); border-color: var(--neon-yellow);">📊 Excel</button>
+                <button class="btn-secondary" id="btnOpenManualModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-pink); border-color: var(--neon-pink);">✍️ 手動</button>
             </div>
 
             <div id="progressArea" style="margin-top: 10px;">
@@ -136,11 +137,17 @@
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" id="closeEditModal">&times;</span>
-            <h3 style="color: var(--neon-cyan); margin-top: 0; border-bottom: 1px dashed #555; padding-bottom: 10px;">編輯單字: <span id="editWordTitle" style="color: #fff;"></span></h3>
+            <h3 style="color: var(--neon-cyan); margin-top: 0; border-bottom: 1px dashed #555; padding-bottom: 10px;" id="editModalTitle">✏️ 編輯單字</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 12px; color: #aaa;">英文單字 (English Word) <span style="color:var(--neon-pink)">*</span> :</label>
+                <input type="text" id="editWordInput" placeholder="輸入英文單字..." style="font-size: 20px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.8);">
+            </div>
+
             <div id="editDefinitionsContainer"></div>
             <button class="btn-action" id="btnAddDefBlock" style="width: 100%; border: 1px dashed #888; color: #aaa; padding: 10px; margin-top: 10px;">➕ 新增一組完整資訊 (詞性/中文/例句)</button>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-primary" id="btnSaveEdit" style="flex: 2; margin: 0;">💾 儲存修改</button>
+                <button class="btn-primary" id="btnSaveEdit" style="flex: 2; margin: 0;">💾 儲存寫入</button>
             </div>
         </div>
     </div>
@@ -315,12 +322,37 @@
             });
         }
 
-        // ================= 編輯器邏輯 =================
+        // ================= ✨ 動態編輯器 (支援新增/編輯雙用) ✨ =================
         let editCardData = null;
-        function openEditModal(card) {
-            editCardData = JSON.parse(JSON.stringify(card));
-            if (!editCardData.definitions) { editCardData.definitions = [{ pos: [card.pos || ''], meanings: [card.chinese ? card.chinese.replace(/<br>/g, ' ') : ''], example: '', source: '' }]; }
-            document.getElementById('editWordTitle').innerText = editCardData.english;
+        let isEditMode = true; // 紀錄目前是編輯舊卡片還是新增卡片
+
+        // 綁定「✍️ 手動」按鈕
+        document.getElementById('btnOpenManualModal').onclick = () => openEditModal(null);
+        document.getElementById('closeEditModal').onclick = () => document.getElementById('editModal').style.display = 'none';
+
+        // 核心開啟函式
+        function openEditModal(card = null) {
+            if (card) {
+                // 編輯模式
+                isEditMode = true;
+                editCardData = JSON.parse(JSON.stringify(card));
+                if (!editCardData.definitions) { 
+                    editCardData.definitions = [{ pos: [card.pos || ''], meanings: [card.chinese ? card.chinese.replace(/<br>/g, ' ') : ''], example: '', source: '' }]; 
+                }
+                document.getElementById('editModalTitle').innerText = '✏️ 編輯單字';
+            } else {
+                // 新增模式
+                isEditMode = false;
+                editCardData = {
+                    english: '',
+                    definitions: [{ pos: [], meanings: [], example: '', source: '' }],
+                    is_difficult: 'false',
+                    is_important: 'false'
+                };
+                document.getElementById('editModalTitle').innerText = '✨ 全手動新增單字';
+            }
+            
+            document.getElementById('editWordInput').value = editCardData.english;
             renderEditModal();
             document.getElementById('editModal').style.display = 'flex';
         }
@@ -365,24 +397,70 @@
         
         document.getElementById('btnAddDefBlock').onclick = () => { editCardData.definitions.push({ pos: [], meanings: [], example: '', source: '' }); renderEditModal(); };
 
+        // AI 造句 (抓取當下輸入框的單字)
         window.aiGenExample = async (idx) => {
+            const currentWord = document.getElementById('editWordInput').value.trim();
+            if (!currentWord) return alert('請先在上方輸入英文單字！');
             const apiKey = await fetchApiKey(); if (!apiKey) return;
             const def = editCardData.definitions[idx];
             if(def.pos.length===0 || def.meanings.length===0) return alert('請先輸入詞性與中文！');
+            
             document.getElementById(`ex-${idx}`).value = "🤖 思考中...";
-            const promptText = `用單字 '${editCardData.english}' 的意思 '${def.pos.join(',')} ${def.meanings.join(',')}'，造一個簡單實用的英文例句，並附上中文翻譯。純文字輸出，格式：[英文例句] \\n [中文翻譯]`;
+            const promptText = `用單字 '${currentWord}' 的意思 '${def.pos.join(',')} ${def.meanings.join(',')}'，造一個簡單實用的英文例句，並附上中文翻譯。純文字輸出，格式：[英文例句] \\n [中文翻譯]`;
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
                 const txt = (await res.json()).candidates[0].content.parts[0].text; editCardData.definitions[idx].example = txt.trim(); renderEditModal();
             } catch(err) { alert('失敗'); document.getElementById(`ex-${idx}`).value = def.example; }
         };
 
-        document.getElementById('btnSaveEdit').onclick = () => {
-            update(ref(db, `cards/${username}/${editCardData.id}`), { definitions: editCardData.definitions, chinese: null, pos: null });
-            push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `更新卡片結構: ${editCardData.english}` });
-            document.getElementById('editModal').style.display = 'none';
+        // 儲存/新增邏輯
+        document.getElementById('btnSaveEdit').onclick = async () => {
+            const newWord = document.getElementById('editWordInput').value.trim();
+            if (!newWord) return alert('⚠️ 英文單字不能為空！');
+
+            // 檢查是否沒有任何中文意思
+            const hasMeaning = editCardData.definitions.some(def => def.meanings.length > 0);
+            if (!hasMeaning) return alert('⚠️ 請至少輸入一個中文意思！');
+
+            // 檢查重複 (新增模式，或者修改了拼字時才檢查)
+            if (!isEditMode || (isEditMode && newWord.toLowerCase() !== editCardData.english.toLowerCase())) {
+                if (currentCards.find(c => c.english.toLowerCase() === newWord.toLowerCase())) {
+                    return alert('⚠️ 此單字已經存在於目前字庫中了！');
+                }
+            }
+
+            editCardData.english = newWord;
+            document.getElementById('btnSaveEdit').innerText = "寫入中...";
+            document.getElementById('btnSaveEdit').disabled = true;
+
+            try {
+                if (isEditMode) {
+                    await update(ref(db, `cards/${username}/${editCardData.id}`), { 
+                        english: editCardData.english,
+                        definitions: editCardData.definitions, 
+                        chinese: null, pos: null 
+                    });
+                    await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `更新單字結構: ${editCardData.english}` });
+                } else {
+                    await push(ref(db, `cards/${username}`), {
+                        username: username, 
+                        deck: currentDeck, 
+                        english: editCardData.english, 
+                        definitions: editCardData.definitions, 
+                        is_difficult: 'false', 
+                        is_important: 'false', 
+                        timestamp: Date.now()
+                    });
+                    await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `手動新增: ${editCardData.english}` });
+                }
+                document.getElementById('editModal').style.display = 'none';
+            } catch (err) {
+                alert('寫入失敗');
+            } finally {
+                document.getElementById('btnSaveEdit').innerText = "💾 儲存修改";
+                document.getElementById('btnSaveEdit').disabled = false;
+            }
         };
-        document.getElementById('closeEditModal').onclick = () => document.getElementById('editModal').style.display = 'none';
 
         // ================= Excel 批量匯入邏輯 =================
         document.getElementById('btnOpenExcelModal').onclick = () => document.getElementById('excelModal').style.display = 'flex';
