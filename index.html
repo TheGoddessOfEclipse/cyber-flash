@@ -6,17 +6,18 @@
     <title>CYBER-FLASH: 登入終端</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
+        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-purple: #b026ff; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; margin: 0; padding: 20px; color: var(--text-main); }
         h2 { color: var(--neon-cyan); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); text-transform: uppercase; text-align: center; margin-top: 0;}
         .subtitle { color: #8892b0; font-size: 14px; margin-bottom: 25px; text-align: center; }
         button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-        input[type="text"] { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
-        input[type="text"]:focus { border-color: var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
+        input[type="text"], input[type="email"], input[type="password"], select { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input[type="text"]:focus, select:focus { border-color: var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.3); }
         .btn-primary { padding: 10px 15px; background: transparent; color: var(--neon-cyan); border: 1px solid var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 243, 255, 0.2); border-radius: 4px; width: 100%; margin-bottom: 10px;}
         .btn-primary:hover { background: var(--neon-cyan); color: #000; box-shadow: 0 0 15px var(--neon-cyan); }
         .btn-secondary { padding: 10px 15px; background: transparent; color: var(--neon-pink); border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255, 0, 255, 0.2); border-radius: 4px; }
         .btn-secondary:hover { background: var(--neon-pink); color: #000; box-shadow: 0 0 15px var(--neon-pink); }
+        
         .panel { background: var(--panel-bg); border: 1px solid #1f2937; border-radius: 8px; backdrop-filter: blur(5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); padding: 20px; }
         .view-section { display: none; max-width: 1200px; margin: 0 auto; animation: glitchFade 0.4s; }
         .view-section.active { display: block; }
@@ -24,12 +25,13 @@
         .center-wrap { text-align: center; margin-top: 10vh; }
         .auth-box { display: inline-block; padding: 40px; }
         .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
-        .deck-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; }
         
+        .deck-grid { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; }
         .deck-card { background: rgba(10, 15, 25, 0.9); padding: 20px 20px 10px 20px; border-radius: 8px; width: 240px; border: 1px solid #333; border-left: 3px solid var(--neon-cyan); cursor: pointer; transition: 0.3s; text-align: center; display: flex; flex-direction: column; justify-content: space-between;}
         .deck-card:hover { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,243,255,0.2); transform: translateY(-3px); }
+        .deck-card.advanced { border-left-color: var(--neon-purple); }
+        .deck-card.advanced:hover { border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(176, 38, 255, 0.3); }
         
-        /* ✨ 新增：卡片操作區塊樣式 */
         .deck-actions { display: flex; justify-content: space-between; margin-top: 15px; border-top: 1px dashed #444; padding-top: 10px; gap: 2px;}
         .deck-action-btn { background: transparent; border: none; color: #aaa; font-size: 11px; cursor: pointer; transition: 0.2s; padding: 5px; border-radius: 4px; }
         .deck-action-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
@@ -37,6 +39,16 @@
 
         .loading-msg { position: fixed; top: 20px; right: 20px; color: var(--neon-green); font-weight: bold; display: none; text-shadow: 0 0 8px var(--neon-green); background: rgba(0,0,0,0.8); padding: 10px 20px; border: 1px solid var(--neon-green); border-radius: 5px; z-index: 999;}
         .dashboard-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);}
+        .modal-content { background: rgba(10, 15, 25, 0.95); border: 1px solid var(--neon-cyan); border-top: 3px solid var(--neon-cyan); border-radius: 8px; padding: 20px; max-width: 500px; width: 90%; color: #e0e6ed; position: relative;}
+        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; color: #888; font-size: 24px; transition: 0.3s; background: none; border: none;} .close-btn:hover { color: var(--neon-pink); }
+        
+        .switch-container { display: flex; gap: 5px; margin-bottom: 20px; }
+        .btn-tab { flex: 1; padding: 10px; background: transparent; color: #888; border: 1px solid #333; font-size: 14px; border-radius: 4px;}
+        .btn-tab.active { background: var(--neon-cyan); color: #000; border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
+        .btn-tab.active-adv { background: var(--neon-purple); color: #fff; border-color: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
+
         @media (max-width: 850px) { .dashboard-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -64,11 +76,10 @@
         
         <div class="dashboard-layout">
             <div class="panel">
-                <h3 style="margin-top: 0; color: var(--neon-cyan);">[ 建立新資料節點 ]</h3>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="newDeckInput" placeholder="輸入節點名稱 (例: 第一課)...">
-                    <button class="btn-primary" style="width: 150px; margin: 0;" id="btnCreateDeck">初始化</button>
-                </div>
+                <h3 style="margin-top: 0; color: var(--neon-cyan); display: flex; justify-content: space-between; align-items: center;">
+                    [ 節點庫與權限 ]
+                    <button class="btn-primary" style="width: auto; margin: 0; padding: 5px 15px; font-size: 13px;" id="btnOpenCreateModal">➕ 新建單字集</button>
+                </h3>
                 <div class="deck-grid" id="deckGrid"></div>
             </div>
             
@@ -76,6 +87,43 @@
                 <h3 style="margin-top: 0; color: var(--neon-pink); border-bottom: 1px dashed #555; padding-bottom: 10px; width: 100%; text-align: center;">[ 學習成效雷達 ]</h3>
                 <div style="width: 100%; max-width: 250px;"><canvas id="statsChart"></canvas></div>
                 <div id="totalTimeStat" style="margin-top: 20px; font-size: 14px; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨ 新建單字集 Modal ✨ -->
+    <div id="createDeckModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeCreateModal">&times;</button>
+            <h3 style="color: #fff; margin-top: 0; margin-bottom: 20px;">建立新節點</h3>
+            
+            <div class="switch-container">
+                <button class="btn-tab active" id="tabRegDeck">一般單字卡集</button>
+                <button class="btn-tab" id="tabAdvDeck" style="border-color: #555;">階層二 (進階)</button>
+            </div>
+
+            <div id="regDeckForm">
+                <input type="text" id="newRegDeckName" placeholder="輸入一般節點名稱 (例: 112教甄)...">
+                <button class="btn-primary" style="margin-top: 15px;" id="btnCreateReg">建立一般卡集</button>
+            </div>
+
+            <div id="advDeckForm" style="display: none;">
+                <input type="text" id="newAdvDeckName" placeholder="輸入進階節點名稱 (例: 考前衝刺總複習)..." style="color: var(--neon-purple); border-color: var(--neon-purple);">
+                
+                <div style="margin-top: 15px; font-size: 13px; color: #aaa;">目標吸收狀態：</div>
+                <select id="advTargetStatus" style="border-color: var(--neon-purple); color: var(--neon-purple); margin-top: 5px;">
+                    <option value="is_difficult">⚠️ 吸收【未精熟】單字</option>
+                    <option value="is_important">✅ 吸收【已精熟】單字</option>
+                </select>
+
+                <div style="margin-top: 15px; font-size: 13px; color: #aaa;">吸收來源 (可複選)：</div>
+                <div id="advSourceList" style="margin-top: 5px; max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.5);">
+                    <!-- 動態載入一般單字表 -->
+                </div>
+
+                <div style="margin-top: 10px; font-size: 11px; color: #888;">* 建立後預設開啟【同步功能】，來源狀態改變會自動更新此進階表。</div>
+
+                <button class="btn-secondary" style="margin-top: 15px; width: 100%; border-color: var(--neon-purple); color: var(--neon-purple);" id="btnCreateAdv">建立進階卡集</button>
             </div>
         </div>
     </div>
@@ -99,10 +147,7 @@
         let currentUser = localStorage.getItem('fc_username') || '';
         let myChart = null;
 
-        function switchView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-        }
+        function switchView(viewId) { document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active')); document.getElementById(viewId).classList.add('active'); }
         function showLoading(text) { document.getElementById('loading').innerText = text; document.getElementById('loading').style.display = 'block'; }
         function hideLoading() { document.getElementById('loading').style.display = 'none'; }
 
@@ -128,102 +173,192 @@
 
         document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('fc_username'); currentUser = ''; switchView('authView'); };
 
+        // 🌟 Modal 切換邏輯
+        document.getElementById('btnOpenCreateModal').onclick = () => {
+            document.getElementById('createDeckModal').style.display = 'flex';
+        };
+        document.getElementById('closeCreateModal').onclick = () => document.getElementById('createDeckModal').style.display = 'none';
+        
+        document.getElementById('tabRegDeck').onclick = () => {
+            document.getElementById('tabRegDeck').className = 'btn-tab active';
+            document.getElementById('tabAdvDeck').className = 'btn-tab';
+            document.getElementById('regDeckForm').style.display = 'block';
+            document.getElementById('advDeckForm').style.display = 'none';
+        };
+        document.getElementById('tabAdvDeck').onclick = () => {
+            document.getElementById('tabRegDeck').className = 'btn-tab';
+            document.getElementById('tabAdvDeck').className = 'btn-tab active-adv';
+            document.getElementById('regDeckForm').style.display = 'none';
+            document.getElementById('advDeckForm').style.display = 'block';
+        };
+
+        // 🌟 建立單字集邏輯
+        document.getElementById('btnCreateReg').onclick = () => {
+            const name = document.getElementById('newRegDeckName').value.trim(); if (!name) return;
+            document.getElementById('createDeckModal').style.display = 'none';
+            localStorage.setItem('fc_current_deck', name); window.location.href = 'deck.html';
+        };
+
+        document.getElementById('btnCreateAdv').onclick = async () => {
+            const name = document.getElementById('newAdvDeckName').value.trim();
+            const targetStatus = document.getElementById('advTargetStatus').value;
+            const checkboxes = document.querySelectorAll('.source-cb:checked');
+            const sources = Array.from(checkboxes).map(cb => cb.value);
+
+            if (!name) return alert('請輸入進階節點名稱');
+            if (sources.length === 0) return alert('請至少勾選一個吸收來源');
+
+            showLoading('🔄 建立中...');
+            await set(ref(db, `deck_settings/${currentUser}/${name}`), {
+                type: 'advanced',
+                sources: sources,
+                targetStatus: targetStatus,
+                sync: true,
+                staticIds: []
+            });
+            document.getElementById('createDeckModal').style.display = 'none';
+            hideLoading();
+            localStorage.setItem('fc_current_deck', name); window.location.href = 'deck.html';
+        };
+
         async function loadDashboard(user) {
             showLoading('下載數據...');
-            const snapshot = await get(ref(db, `cards/${user}`));
+            const [cardsSnap, settingsSnap] = await Promise.all([ get(ref(db, `cards/${user}`)), get(ref(db, `deck_settings/${user}`)) ]);
+            
+            const allCards = cardsSnap.exists() ? cardsSnap.val() : {};
+            const allSettings = settingsSnap.exists() ? settingsSnap.val() : {};
+            
+            // 找出所有一般單字集
+            const regDecks = [...new Set(Object.values(allCards).map(c => c.deck))];
+            // 找出所有進階單字集
+            const advDecks = Object.keys(allSettings).filter(k => allSettings[k].type === 'advanced');
+            
+            const allDeckNames = [...new Set([...regDecks, ...advDecks])];
             const grid = document.getElementById('deckGrid'); grid.innerHTML = '';
             
-            let allCards = {};
-            if(snapshot.exists()) {
-                allCards = snapshot.val();
-            }
+            // 更新進階單字集 Modal 的來源選單
+            const sourceListEl = document.getElementById('advSourceList');
+            sourceListEl.innerHTML = regDecks.length > 0 
+                ? regDecks.map(d => `<label style="display:block; color:#fff; cursor:pointer;"><input type="checkbox" class="source-cb" value="${d}"> ${d}</label>`).join('')
+                : '<div style="color:#f44;">尚未擁有一般單字集，無法建立進階表。</div>';
 
-            const decks = [...new Set(Object.values(allCards).map(c => c.deck))];
-            
-            if (decks.length === 0) {
+            if (allDeckNames.length === 0) {
                  grid.innerHTML = '<p style="color:#555;">尚未建立任何節點</p>';
             } else {
-                decks.forEach(deckName => {
-                    const deckCards = Object.entries(allCards).filter(([id, c]) => c.deck === deckName);
-                    const count = deckCards.length;
+                allDeckNames.forEach(deckName => {
+                    const isAdvanced = allSettings[deckName] && allSettings[deckName].type === 'advanced';
+                    let count = 0;
                     
-                    // 建立單字表卡片
-                    const cardEl = document.createElement('div'); cardEl.className = 'deck-card'; 
+                    if (isAdvanced) {
+                        const s = allSettings[deckName];
+                        let allArr = Object.entries(allCards).map(([id, val]) => ({id, ...val}));
+                        if (s.sync) {
+                            count = allArr.filter(c => (s.sources||[]).includes(c.deck) && String(c[s.targetStatus]).toLowerCase() === 'true').length;
+                        } else {
+                            count = allArr.filter(c => (s.staticIds||[]).includes(c.id)).length;
+                        }
+                    } else {
+                        count = Object.values(allCards).filter(c => c.deck === deckName).length;
+                    }
+                    
+                    const cardEl = document.createElement('div'); 
+                    cardEl.className = isAdvanced ? 'deck-card advanced' : 'deck-card'; 
                     cardEl.onclick = () => { localStorage.setItem('fc_current_deck', deckName); window.location.href = 'deck.html'; };
                     
-                    // 卡片上半部 (資訊)
+                    const titleColor = isAdvanced ? 'var(--neon-purple)' : 'var(--neon-cyan)';
+                    const typeLabel = isAdvanced ? '⭐ 進階階層' : '一般節點';
+
                     const infoDiv = document.createElement('div');
                     infoDiv.innerHTML = `
-                        <div style="font-size: 18px; color: var(--neon-cyan); margin-bottom:5px; word-break: break-all; font-weight:bold;">${deckName}</div>
-                        <div style="color: #64748b; font-size: 12px;">資料容量: ${count} 筆</div>
+                        <div style="font-size: 18px; color: ${titleColor}; margin-bottom:5px; word-break: break-all; font-weight:bold;">${deckName}</div>
+                        <div style="color: #64748b; font-size: 11px; margin-bottom:5px;">[ ${typeLabel} ]</div>
+                        <div style="color: #aaa; font-size: 12px;">資料容量: ${count} 筆</div>
                     `;
                     cardEl.appendChild(infoDiv);
 
-                    // 卡片下半部 (按鈕操作區)
                     const actionsDiv = document.createElement('div');
                     actionsDiv.className = 'deck-actions';
-                    actionsDiv.onclick = (e) => e.stopPropagation(); // 防止點擊按鈕時觸發進入單字表
+                    actionsDiv.onclick = (e) => e.stopPropagation();
 
-                    // 1. 修改名稱
+                    // 改名
                     const btnRename = document.createElement('button'); btnRename.className = 'deck-action-btn'; btnRename.innerText = '✏️改名';
                     btnRename.onclick = async () => {
                         const newName = prompt('請輸入新的單字表名稱：', deckName);
                         if(!newName || newName === deckName) return;
                         showLoading('🔄 更新中...');
                         const updates = {};
-                        deckCards.forEach(([id, c]) => { updates[`cards/${user}/${id}/deck`] = newName; });
-                        await update(ref(db), updates);
-                        loadDashboard(user);
+                        if (isAdvanced) {
+                            updates[`deck_settings/${user}/${newName}`] = allSettings[deckName];
+                            updates[`deck_settings/${user}/${deckName}`] = null;
+                        } else {
+                            Object.entries(allCards).filter(([id, c]) => c.deck === deckName).forEach(([id, c]) => { updates[`cards/${user}/${id}/deck`] = newName; });
+                            if(allSettings[deckName]) { updates[`deck_settings/${user}/${newName}`] = allSettings[deckName]; updates[`deck_settings/${user}/${deckName}`] = null; }
+                        }
+                        await update(ref(db), updates); loadDashboard(user);
                     };
 
-                    // 2. 複製
+                    // 複製
                     const btnCopy = document.createElement('button'); btnCopy.className = 'deck-action-btn'; btnCopy.innerText = '📄複製';
                     btnCopy.onclick = async () => {
                         const newName = prompt('請輸入複製後的單字表名稱：', deckName + '_複製');
                         if(!newName) return;
                         showLoading('🔄 複製中...');
                         const updates = {};
-                        deckCards.forEach(([id, c]) => {
-                            const newId = push(child(ref(db), `cards/${user}`)).key;
-                            updates[`cards/${user}/${newId}`] = { ...c, deck: newName, timestamp: Date.now() };
-                        });
-                        await update(ref(db), updates);
-                        loadDashboard(user);
+                        if (isAdvanced) {
+                            updates[`deck_settings/${user}/${newName}`] = allSettings[deckName];
+                        } else {
+                            Object.entries(allCards).filter(([id, c]) => c.deck === deckName).forEach(([id, c]) => {
+                                const newId = push(child(ref(db), `cards/${user}`)).key;
+                                updates[`cards/${user}/${newId}`] = { ...c, deck: newName, timestamp: Date.now() };
+                            });
+                            if(allSettings[deckName]) updates[`deck_settings/${user}/${newName}`] = allSettings[deckName];
+                        }
+                        await update(ref(db), updates); loadDashboard(user);
                     };
 
-                    // 3. 整合 (合併)
-                    const btnMerge = document.createElement('button'); btnMerge.className = 'deck-action-btn'; btnMerge.innerText = '🔗整合';
-                    btnMerge.onclick = async () => {
-                        const otherDecks = decks.filter(d => d !== deckName);
-                        if(otherDecks.length === 0) return alert('沒有其他單字表可以整合！');
-                        const targetName = prompt(`請輸入要將 [ ${deckName} ] 合併進去的目標單字表名稱：\n\n(存在的其他單字表有: ${otherDecks.join(', ')})`);
-                        if(!targetName || targetName === deckName) return;
-                        if(!confirm(`確定要將 [ ${deckName} ] 裡的所有單字全部移動到 [ ${targetName} ] 裡面嗎？`)) return;
-                        showLoading('🔄 整合中...');
-                        const updates = {};
-                        deckCards.forEach(([id, c]) => { updates[`cards/${user}/${id}/deck`] = targetName; });
-                        await update(ref(db), updates);
-                        loadDashboard(user);
-                    };
+                    // 整合 (進階單字表不允許整合)
+                    if (!isAdvanced) {
+                        const btnMerge = document.createElement('button'); btnMerge.className = 'deck-action-btn'; btnMerge.innerText = '🔗整合';
+                        btnMerge.onclick = async () => {
+                            const otherDecks = regDecks.filter(d => d !== deckName);
+                            if(otherDecks.length === 0) return alert('沒有其他一般單字表可以整合！');
+                            const targetName = prompt(`將 [ ${deckName} ] 合併進目標單字表：\n\n(存在的其他單字表有: ${otherDecks.join(', ')})`);
+                            if(!targetName || targetName === deckName) return;
+                            if(!confirm(`確定要將 [ ${deckName} ] 裡的所有單字全部移動到 [ ${targetName} ] 裡面嗎？`)) return;
+                            showLoading('🔄 整合中...');
+                            const updates = {};
+                            Object.entries(allCards).filter(([id, c]) => c.deck === deckName).forEach(([id, c]) => { updates[`cards/${user}/${id}/deck`] = targetName; });
+                            await update(ref(db), updates); loadDashboard(user);
+                        };
+                        actionsDiv.appendChild(btnMerge);
+                    }
 
-                    // 4. 刪除
+                    // 刪除
                     const btnDelete = document.createElement('button'); btnDelete.className = 'deck-action-btn del'; btnDelete.innerText = '🗑️刪除';
                     btnDelete.onclick = async () => {
-                        if(!confirm(`⚠️ 警告！確定要永久刪除 [ ${deckName} ] 以及裡面的 ${count} 個單字嗎？此操作無法復原！`)) return;
-                        showLoading('🗑️ 刪除中...');
-                        const updates = {};
-                        deckCards.forEach(([id, c]) => { updates[`cards/${user}/${id}`] = null; });
-                        await update(ref(db), updates);
-                        loadDashboard(user);
+                        if (isAdvanced) {
+                            if(!confirm(`⚠️ 確定要移除進階單字集 [ ${deckName} ] 嗎？\n(這只會移除此分類表，不會刪除原本的單字)`)) return;
+                            showLoading('🗑️ 移除中...');
+                            await update(ref(db), { [`deck_settings/${user}/${deckName}`]: null });
+                            loadDashboard(user);
+                        } else {
+                            if(!confirm(`⚠️ 警告！確定要永久刪除 [ ${deckName} ] 以及裡面的所有單字嗎？此操作無法復原！`)) return;
+                            showLoading('🗑️ 刪除中...');
+                            const updates = {};
+                            Object.entries(allCards).filter(([id, c]) => c.deck === deckName).forEach(([id, c]) => { updates[`cards/${user}/${id}`] = null; });
+                            updates[`deck_settings/${user}/${deckName}`] = null;
+                            await update(ref(db), updates); loadDashboard(user);
+                        }
                     };
 
-                    actionsDiv.append(btnRename, btnCopy, btnMerge, btnDelete);
+                    actionsDiv.prepend(btnRename, btnCopy);
+                    actionsDiv.appendChild(btnDelete);
                     cardEl.appendChild(actionsDiv);
                     grid.appendChild(cardEl);
                 });
             }
             
-            // 繪製成效圖表
+            // 圖表渲染
             const logSnap = await get(ref(db, `logs/${user}`));
             if(logSnap.exists()) {
                 const logs = Object.values(logSnap.val());
@@ -237,28 +372,15 @@
                         if(l.type.includes('四選一')) modesCount['四選一']++;
                     }
                 });
-                
                 let mins = Math.floor(totalMs / 60000);
                 document.getElementById('totalTimeStat').innerText = `總訓練時數：${mins} 分鐘`;
                 
                 const ctx = document.getElementById('statsChart').getContext('2d');
                 if(myChart) myChart.destroy();
-                myChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(modesCount),
-                        datasets: [{ label: '訓練次數', data: Object.values(modesCount), backgroundColor: ['rgba(0, 255, 255, 0.4)', 'rgba(57, 255, 20, 0.4)', 'rgba(255, 251, 0, 0.4)'], borderColor: ['#00ffff', '#39ff14', '#fffb00'], borderWidth: 1 }]
-                    },
-                    options: { scales: { r: { grid: { color: '#333' }, ticks: { display: false }, pointLabels: { color: '#aaa' } } }, plugins: { legend: { display: false } } }
-                });
+                myChart = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(modesCount), datasets: [{ data: Object.values(modesCount), backgroundColor: ['rgba(0, 255, 255, 0.4)', 'rgba(57, 255, 20, 0.4)', 'rgba(255, 251, 0, 0.4)'], borderColor: ['#00ffff', '#39ff14', '#fffb00'], borderWidth: 1 }] }, options: { plugins: { legend: { display: false } } } });
             }
             hideLoading();
         }
-
-        document.getElementById('btnCreateDeck').onclick = () => {
-            const name = document.getElementById('newDeckInput').value.trim(); if (!name) return;
-            localStorage.setItem('fc_current_deck', name); window.location.href = 'deck.html';
-        };
     </script>
 </body>
 </html>

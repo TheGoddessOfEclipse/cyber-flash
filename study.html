@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CYBER-FLASH: 訓練模組</title>
     <style>
-        :root { --neon-cyan: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --dark-bg: #090a0f; --text-main: #e0e6ed; }
+        :root { --neon-cyan: #00ffff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --neon-purple: #b026ff; --dark-bg: #090a0f; --text-main: #e0e6ed; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 255, 0.08) 1px, transparent 1px); background-size: 40px 40px; margin: 0; padding: 20px; color: var(--text-main); display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         .nav-bar { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #222; padding-bottom: 15px; margin-bottom: 40px; flex-wrap: wrap; gap: 10px;}
         .mode-title { font-size: 26px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow), var(--neon-cyan)); background-size: 300%; background-clip: text; -webkit-background-clip: text; color: transparent; animation: textGlow 5s linear infinite; text-shadow: 0 0 10px rgba(255,255,255,0.2);}
@@ -67,6 +67,7 @@
         <div class="big-card" id="studyCard">
             <div class="card-inner">
                 <div class="card-front">
+                    <div id="sourceTag" style="position: absolute; top: 15px; left: 15px; font-size: 12px; color: #aaa; border: 1px solid #555; padding: 3px 8px; border-radius: 4px; display: none;"></div>
                     <div class="big-word" id="fcWord"></div>
                     <button id="btnPlaySoundFront" class="btn-action btn-cyan" style="position: absolute; bottom: 20px; right: 20px; padding: 10px; border-radius: 50%;">🔊</button>
                 </div>
@@ -145,6 +146,7 @@
         const app = initializeApp(firebaseConfig); const db = getDatabase(app);
 
         let originalCards = [], cards = [], currentIndex = 0, studyStartTime = Date.now(), quizHistory = [], mcqCorrectAnswer = "";
+        let deckSettingsData = null;
         const urlParams = new URLSearchParams(window.location.search);
         const mode = urlParams.get('mode'); 
         const username = localStorage.getItem('fc_username'), deck = localStorage.getItem('fc_study_deck'), filterMode = localStorage.getItem('fc_study_filter') || 'all';
@@ -158,17 +160,33 @@
             if (!username || !deck) window.location.href='index.html';
             document.getElementById('displayTitle').innerText = `[ ${deck} ]`;
             try {
-                const snapshot = await get(ref(db, `cards/${username}`));
-                if (!snapshot.exists()) throw new Error('No Data');
-                let fetchedData = Object.entries(snapshot.val()).map(([id, val]) => ({ id, ...val })).filter(c => c.deck === deck);
+                // 同時抓取單字和進階設定
+                const [cardsSnap, settingsSnap] = await Promise.all([ get(ref(db, `cards/${username}`)), get(ref(db, `deck_settings/${username}/${deck}`)) ]);
                 
-                // 讀取過濾條件
-                if (filterMode === 'difficult') fetchedData = fetchedData.filter(c => String(c.is_difficult).toLowerCase() === 'true');
-                if (filterMode === 'important') fetchedData = fetchedData.filter(c => String(c.is_important).toLowerCase() === 'true');
+                if (!cardsSnap.exists()) throw new Error('No Data');
+                let allCardsArr = Object.entries(cardsSnap.val()).map(([id, val]) => ({ id, ...val }));
+                
+                deckSettingsData = settingsSnap.exists() ? settingsSnap.val() : null;
+                
+                let fetchedData = [];
+                // 判斷是否為階層二進階單字集
+                if (deckSettingsData && deckSettingsData.type === 'advanced') {
+                    document.getElementById('displayTitle').style.backgroundImage = 'linear-gradient(90deg, var(--neon-purple), var(--neon-pink), var(--neon-cyan), var(--neon-purple))';
+                    if (deckSettingsData.sync) {
+                        fetchedData = allCardsArr.filter(c => (deckSettingsData.sources||[]).includes(c.deck) && String(c[deckSettingsData.targetStatus]).toLowerCase() === 'true');
+                    } else {
+                        fetchedData = allCardsArr.filter(c => (deckSettingsData.staticIds||[]).includes(c.id));
+                    }
+                } else {
+                    // 一般單字表
+                    fetchedData = allCardsArr.filter(c => c.deck === deck);
+                    if (filterMode === 'difficult') fetchedData = fetchedData.filter(c => String(c.is_difficult).toLowerCase() === 'true');
+                    if (filterMode === 'important') fetchedData = fetchedData.filter(c => String(c.is_important).toLowerCase() === 'true');
+                }
                 
                 originalCards = [...fetchedData];
                 document.getElementById('loading').style.display = 'none';
-                if (originalCards.length === 0) { alert('無數據！'); window.location.href = 'deck.html'; return; }
+                if (originalCards.length === 0) { alert('此條件下無數據可供訓練！'); window.location.href = 'deck.html'; return; }
                 
                 document.getElementById('studySortFilter').dispatchEvent(new Event('change'));
             } catch (e) { alert('讀取異常！'); window.location.href='deck.html'; }
@@ -186,7 +204,6 @@
             currentIndex = 0; startMode();
         };
 
-        // ✨ 更新單字跳轉清單 ✨
         function updateJumpList() {
             const jumpSelect = document.getElementById('jumpToWordList');
             if (!jumpSelect) return;
@@ -202,7 +219,6 @@
             });
         }
 
-        // 選擇跳轉事件
         document.getElementById('jumpToWordList').onchange = (e) => {
             currentIndex = parseInt(e.target.value);
             loadFlashcard();
@@ -212,18 +228,24 @@
             document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
             if (mode === 'flashcard') { 
                 document.getElementById('flashcardMode').classList.add('active'); 
-                updateJumpList(); // 排序改變時，更新跳轉清單
+                updateJumpList();
                 loadFlashcard(); 
             }
             else if (mode === 'quiz') { document.getElementById('quizMode').classList.add('active'); quizHistory = []; loadQuiz(); }
             else if (mode === 'mcq') { document.getElementById('mcqMode').classList.add('active'); quizHistory = []; loadMcq(); }
         }
 
-        // ================= 1. 閃卡模式 =================
         function loadFlashcard() {
             const card = cards[currentIndex]; document.getElementById('studyCard').classList.remove('flipped');
             document.getElementById('fcWord').innerText = card.english;
             
+            // 進階表顯示來源標籤
+            const sourceTag = document.getElementById('sourceTag');
+            if (deckSettingsData && deckSettingsData.type === 'advanced') {
+                sourceTag.style.display = 'block';
+                sourceTag.innerText = `來源: ${card.deck}`;
+            } else { sourceTag.style.display = 'none'; }
+
             let backHtml = '';
             if(card.definitions) {
                 backHtml = card.definitions.map(def => `
@@ -238,25 +260,23 @@
             document.getElementById('fcTranslation').innerHTML = backHtml;
             document.getElementById('fcProgress').innerText = `SEQ: ${currentIndex + 1} / ${cards.length}`;
             
-            // 更新跳轉清單的目前選項
             const jumpSelect = document.getElementById('jumpToWordList');
             if(jumpSelect) jumpSelect.value = currentIndex;
 
             setTimeout(() => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u); }, 200);
         }
         
-        // 分類與跳下一張邏輯
         function markCard(status) {
             const c = cards[currentIndex];
             let isDiff = 'false', isImp = 'false';
             
-            if (status === 'mastered') isImp = 'true'; // 已精熟
-            else if (status === 'learning') isDiff = 'true'; // 未精熟
+            if (status === 'mastered') isImp = 'true'; 
+            else if (status === 'learning') isDiff = 'true'; 
             
             c.is_difficult = isDiff; c.is_important = isImp;
             update(ref(db, `cards/${username}/${c.id}`), { is_difficult: isDiff, is_important: isImp });
             
-            updateJumpList(); // 標記狀態改變後，刷新跳轉清單上的 icon
+            updateJumpList();
             
             if (currentIndex >= cards.length - 1) showResults(); 
             else { currentIndex++; loadFlashcard(); }
@@ -285,7 +305,6 @@
         
         document.getElementById('btnPlaySoundFront').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(cards[currentIndex].english); u.lang = 'en-US'; speechSynthesis.speak(u); };
 
-        // ================= 2. 拼字填空模式 =================
         function loadQuiz() {
             const inputEl = document.getElementById('quizInput'); inputEl.value = ''; inputEl.disabled = false;
             document.getElementById('quizFeedback').innerText = ''; document.getElementById('quizWord').innerText = cards[currentIndex].english;
@@ -306,7 +325,6 @@
         };
         document.getElementById('btnSkip').onclick = () => { quizHistory.push({ word: cards[currentIndex].english, userAns: "(跳過)", correctAns: getCardMeaningStr(cards[currentIndex]), isCorrect: false }); currentIndex++; if(currentIndex >= cards.length) showResults(); else loadQuiz(); };
 
-        // ================= 3. 四選一模式 =================
         function loadMcq() {
             const card = cards[currentIndex]; mcqCorrectAnswer = getCardMeaningStr(card);
             document.getElementById('mcqFeedback').innerText = '';
@@ -347,7 +365,6 @@
         document.getElementById('btnNextMcq').onclick = nextMcqQuestion;
         function nextMcqQuestion() { currentIndex++; if(currentIndex >= cards.length) showResults(); else loadMcq(); }
 
-        // ================= 結算與日誌 =================
         function showResults() {
             document.querySelectorAll('.study-container').forEach(el => el.classList.remove('active'));
             document.getElementById('resultMode').classList.add('active');

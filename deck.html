@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CYBER-FLASH: 節點管理</title>
     <style>
-        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
+        :root { --neon-cyan: #00f3ff; --neon-pink: #ff00ff; --neon-green: #39ff14; --neon-yellow: #fffb00; --neon-orange: #ff8c00; --neon-purple: #b026ff; --dark-bg: #090a0f; --panel-bg: rgba(10, 15, 25, 0.85); --text-main: #e0e6ed; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px; margin: 0; padding: 20px; color: var(--text-main); }
         button { cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         input[type="text"], textarea, select { background-color: rgba(0, 0, 0, 0.6); color: var(--neon-cyan); border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
@@ -19,6 +19,7 @@
         
         .flashcard-layout { display: grid; grid-template-columns: 280px 1fr 250px; gap: 20px; height: 90vh; max-width: 1200px; margin: 0 auto;}
         .left-panel { display: flex; flex-direction: column; gap: 15px; border-top: 2px solid var(--neon-cyan); }
+        .left-panel.advanced { border-top-color: var(--neon-purple); }
         .location-tag { color: var(--neon-pink); font-weight: bold; font-size: 18px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 10px;}
         textarea { height: 80px; resize: none; }
         .cyber-hr { border: none; border-top: 1px dashed #333; margin: 5px 0; }
@@ -66,7 +67,7 @@
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px);}
         .modal-content { background: rgba(10, 15, 25, 0.95); border: 1px solid var(--neon-cyan); border-top: 3px solid var(--neon-cyan); border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto; color: #e0e6ed; position: relative;}
-        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; color: #888; font-size: 24px; transition: 0.3s;} .close-btn:hover { color: var(--neon-pink); }
+        .close-btn { position: absolute; top: 15px; right: 20px; cursor: pointer; color: #888; font-size: 24px; transition: 0.3s; background: transparent; border: none;} .close-btn:hover { color: var(--neon-pink); }
         .edit-block { border: 1px dashed #444; padding: 15px; margin-bottom: 15px; border-radius: 8px; position: relative; background: rgba(0,0,0,0.4); }
         .edit-input-group { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
         .tag-input { display: inline-flex; align-items: center; background: rgba(255,0,255,0.1); border: 1px solid var(--neon-pink); padding: 2px 8px; border-radius: 12px; font-size: 12px; margin: 2px; }
@@ -82,7 +83,7 @@
 </head>
 <body>
     <div class="flashcard-layout">
-        <div class="left-panel panel">
+        <div class="left-panel panel" id="leftPanelBox">
             <div class="location-tag" id="currentDeckName">📍 載入中...</div>
             <button class="btn-secondary" id="btnBackToDash" style="margin-left:0; margin-bottom: 10px; width: 100%;">🔙 返回主控台</button>
             <hr class="cyber-hr">
@@ -94,13 +95,21 @@
                 <button class="btn-tab" id="tabImp">✅ 已精熟</button>
             </div>
 
-            <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
-            <textarea id="wordInput" placeholder="輸入單字交給 AI 幫你找意思...&#10;(按 Enter 直接送出)"></textarea>
-            
-            <div style="display: flex; gap: 5px;">
-                <button class="btn-primary" id="btnBulkAdd" style="flex: 2; margin: 0; padding: 10px 5px;">⚡ AI 智能</button>
-                <button class="btn-secondary" id="btnOpenExcelModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-yellow); border-color: var(--neon-yellow);">📊 Excel</button>
-                <button class="btn-secondary" id="btnOpenManualModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-pink); border-color: var(--neon-pink);">✍️ 手動</button>
+            <!-- 一般單字集的新增區塊 -->
+            <div id="inputSection">
+                <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
+                <textarea id="wordInput" placeholder="輸入單字交給 AI 幫你找意思...&#10;(按 Enter 直接送出)"></textarea>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-primary" id="btnBulkAdd" style="flex: 2; margin: 0; padding: 10px 5px;">⚡ AI 智能</button>
+                    <button class="btn-secondary" id="btnOpenExcelModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-yellow); border-color: var(--neon-yellow);">📊 Excel</button>
+                    <button class="btn-secondary" id="btnOpenManualModal" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 12px; color: var(--neon-pink); border-color: var(--neon-pink);">✍️ 手動</button>
+                </div>
+            </div>
+
+            <!-- ✨ 進階單字集的同步控制區塊 ✨ -->
+            <div id="syncControlPanel" style="display:none; padding:15px 10px; border:1px solid var(--neon-purple); border-radius:4px; margin-top:10px; background:rgba(176, 38, 255, 0.1);">
+                <div style="color:var(--neon-purple); font-weight:bold; font-size:14px; margin-bottom:10px; text-align:center;">🟣 階層二同步系統</div>
+                <button id="btnToggleSync" class="btn-action" style="width:100%; padding: 10px; font-size: 13px;"></button>
             </div>
 
             <div id="progressArea" style="margin-top: 10px;">
@@ -134,9 +143,10 @@
         </div>
     </div>
 
+    <!-- 編輯/新增共用 Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" id="closeEditModal">&times;</span>
+            <button class="close-btn" id="closeEditModal">&times;</button>
             <h3 style="color: var(--neon-cyan); margin-top: 0; border-bottom: 1px dashed #555; padding-bottom: 10px;" id="editModalTitle">✏️ 編輯單字</h3>
             
             <div style="margin-bottom: 15px;">
@@ -152,9 +162,10 @@
         </div>
     </div>
 
+    <!-- Excel 批量匯入 Modal -->
     <div id="excelModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
-            <span class="close-btn" id="closeExcelModal">&times;</span>
+            <button class="close-btn" id="closeExcelModal">&times;</button>
             <h3 style="color: var(--neon-yellow); margin-top: 0; border-bottom: 1px dashed #555; padding-bottom: 10px;">📊 Excel 批量急速匯入</h3>
             <div style="font-size: 13px; color: #aaa; margin-bottom: 15px; line-height: 1.6;">
                 請在 Excel 圈選資料後，直接「複製 ➔ 貼上」至下方框框。<br>
@@ -192,8 +203,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQqcLuk_MS9Tu9l8rkDk1JZysoZIBxNWwZJW2mkMp3_a-V7Mxn6UnsdwrPnmjbkahPFbC62e2e8fEcP/pub?output=csv";
-        let GEMINI_API_KEY = ""; 
-        let waitingList = [];
+        let GEMINI_API_KEY = ""; let waitingList = [];
 
         async function fetchApiKey() {
             if (GEMINI_API_KEY) return GEMINI_API_KEY; 
@@ -207,16 +217,26 @@
 
         const username = localStorage.getItem('fc_username');
         const currentDeck = localStorage.getItem('fc_current_deck');
+        let allCardsData = {};
+        let deckSettingsData = null;
+        let isSettingsLoaded = false;
+        let isCardsLoaded = false;
         let currentCards = [];
         let filterMode = 'all';
 
         if (!username || !currentDeck) window.location.href = 'index.html';
-        document.getElementById('currentDeckName').innerText = `📍 節點：${currentDeck}`;
+        
+        // 🌟 雙重監聽：單字資料與設定檔
+        onValue(ref(db, `deck_settings/${username}/${currentDeck}`), (snap) => {
+            deckSettingsData = snap.val() || null;
+            isSettingsLoaded = true;
+            if(isCardsLoaded) processCards();
+        });
 
-        onValue(ref(db, `cards/${username}`), (snapshot) => {
-            const data = snapshot.val() || {};
-            currentCards = Object.entries(data).map(([id, val]) => ({ id, ...val })).filter(c => c.deck === currentDeck);
-            renderCards();
+        onValue(ref(db, `cards/${username}`), (snap) => {
+            allCardsData = snap.val() || {};
+            isCardsLoaded = true;
+            if(isSettingsLoaded) processCards();
         });
 
         document.getElementById('tabAll').onclick = () => { filterMode = 'all'; updateFilterUI(); };
@@ -240,6 +260,58 @@
             if(filterMode === 'important') scopeTxt = '目前範圍：✅ 僅限已精熟單字';
             document.getElementById('trainingScopeTxt').innerText = scopeTxt;
             
+            renderCards();
+        }
+
+        // 🌟 核心：根據節點類型過濾卡片
+        function processCards() {
+            let all = Object.entries(allCardsData).map(([id, val]) => ({ id, ...val }));
+            
+            if (deckSettingsData && deckSettingsData.type === 'advanced') {
+                // 進階單字表 UI 切換
+                document.getElementById('inputSection').style.display = 'none';
+                document.getElementById('syncControlPanel').style.display = 'block';
+                document.getElementById('leftPanelBox').classList.add('advanced');
+                
+                const typeIcon = deckSettingsData.targetStatus === 'is_difficult' ? '⚠️未精熟' : '✅已精熟';
+                document.getElementById('currentDeckName').innerHTML = `<span style="color:var(--neon-purple)">📍 進階：${currentDeck}</span> <div style="font-size:12px; color:#aaa; margin-top:5px;">(吸收來源: ${deckSettingsData.sources.join(', ')} 的 ${typeIcon})</div>`;
+
+                const isSync = deckSettingsData.sync;
+                const syncBtn = document.getElementById('btnToggleSync');
+                
+                if (isSync) {
+                    syncBtn.innerText = '🔄 目前狀態：已開啟動態同步 (點擊凍結)';
+                    syncBtn.style.color = 'var(--neon-green)'; syncBtn.style.borderColor = 'var(--neon-green)';
+                    // 過濾出符合條件的單字
+                    currentCards = all.filter(c => (deckSettingsData.sources || []).includes(c.deck) && String(c[deckSettingsData.targetStatus]).toLowerCase() === 'true');
+                } else {
+                    syncBtn.innerText = '❄️ 目前狀態：已凍結同步 (點擊解凍)';
+                    syncBtn.style.color = '#888'; syncBtn.style.borderColor = '#888';
+                    // 只顯示當初凍結時記錄的卡片 ID
+                    const sIds = deckSettingsData.staticIds || [];
+                    currentCards = all.filter(c => sIds.includes(c.id));
+                }
+
+                syncBtn.onclick = () => {
+                    if (isSync) {
+                        if(confirm('凍結同步後，此進階單字集將固定為目前的單字，不再跟隨來源狀態改變。確定要凍結嗎？')) {
+                            const staticIds = currentCards.map(c => c.id);
+                            update(ref(db, `deck_settings/${username}/${currentDeck}`), { sync: false, staticIds: staticIds });
+                        }
+                    } else {
+                        if(confirm('解除凍結後，此進階單字集將自動根據來源單字表的精熟狀態增減。確定要開啟嗎？')) {
+                            update(ref(db, `deck_settings/${username}/${currentDeck}`), { sync: true, staticIds: null });
+                        }
+                    }
+                };
+            } else {
+                // 一般單字表
+                document.getElementById('inputSection').style.display = 'block';
+                document.getElementById('syncControlPanel').style.display = 'none';
+                document.getElementById('leftPanelBox').classList.remove('advanced');
+                document.getElementById('currentDeckName').innerText = `📍 節點：${currentDeck}`;
+                currentCards = all.filter(c => c.deck === currentDeck);
+            }
             renderCards();
         }
 
@@ -296,9 +368,14 @@
                     backHtml = `<div style="color: var(--neon-cyan);"><span style="color: var(--neon-pink);">${card.pos||''}</span> ${card.chinese}</div>`;
                 }
 
+                // 若為進階模式，顯示單字的真實來源節點
+                const isAdvancedDeck = deckSettingsData && deckSettingsData.type === 'advanced';
+                const sourceBadge = isAdvancedDeck ? `<div style="position:absolute; top:10px; left:10px; font-size:10px; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px;">來源: ${card.deck}</div>` : '';
+
                 el.innerHTML = `
                     <div class="card-inner">
                         <div class="${frontClass}">
+                            ${sourceBadge}
                             <div class="word-text">${card.english}</div>
                             <button class="action-icon btn-speak" style="position: absolute; bottom: 10px; right: 10px; border-color: var(--neon-cyan); color: var(--neon-cyan);">🔊</button>
                         </div>
@@ -317,38 +394,27 @@
                 el.querySelector('.btn-diff').onclick = (e) => { e.stopPropagation(); const newVal = isDiff ? 'false' : 'true'; update(ref(db, `cards/${username}/${card.id}`), { is_difficult: newVal }); };
                 el.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(card); };
                 el.querySelector('.btn-speak').onclick = (e) => { e.stopPropagation(); speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(card.english); u.lang = 'en-US'; speechSynthesis.speak(u); };
-                el.querySelector('.btn-del').onclick = (e) => { e.stopPropagation(); if (confirm('確定刪除？')) { remove(ref(db, `cards/${username}/${card.id}`)); push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `刪除單字: ${card.english}` }); } };
+                el.querySelector('.btn-del').onclick = (e) => { e.stopPropagation(); if (confirm('確定刪除？')) { remove(ref(db, `cards/${username}/${card.id}`)); push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: card.deck, type: '資訊編輯', remarks: `刪除單字: ${card.english}` }); } };
                 grid.appendChild(el);
             });
         }
 
-        // ================= ✨ 動態編輯器 (支援新增/編輯雙用) ✨ =================
+        // ================= 動態編輯器 (新增/編輯雙用) =================
         let editCardData = null;
-        let isEditMode = true; // 紀錄目前是編輯舊卡片還是新增卡片
+        let isEditMode = true; 
 
-        // 綁定「✍️ 手動」按鈕
         document.getElementById('btnOpenManualModal').onclick = () => openEditModal(null);
         document.getElementById('closeEditModal').onclick = () => document.getElementById('editModal').style.display = 'none';
 
-        // 核心開啟函式
         function openEditModal(card = null) {
             if (card) {
-                // 編輯模式
                 isEditMode = true;
                 editCardData = JSON.parse(JSON.stringify(card));
-                if (!editCardData.definitions) { 
-                    editCardData.definitions = [{ pos: [card.pos || ''], meanings: [card.chinese ? card.chinese.replace(/<br>/g, ' ') : ''], example: '', source: '' }]; 
-                }
+                if (!editCardData.definitions) { editCardData.definitions = [{ pos: [card.pos || ''], meanings: [card.chinese ? card.chinese.replace(/<br>/g, ' ') : ''], example: '', source: '' }]; }
                 document.getElementById('editModalTitle').innerText = '✏️ 編輯單字';
             } else {
-                // 新增模式
                 isEditMode = false;
-                editCardData = {
-                    english: '',
-                    definitions: [{ pos: [], meanings: [], example: '', source: '' }],
-                    is_difficult: 'false',
-                    is_important: 'false'
-                };
+                editCardData = { english: '', definitions: [{ pos: [], meanings: [], example: '', source: '' }], is_difficult: 'false', is_important: 'false' };
                 document.getElementById('editModalTitle').innerText = '✨ 全手動新增單字';
             }
             
@@ -397,7 +463,6 @@
         
         document.getElementById('btnAddDefBlock').onclick = () => { editCardData.definitions.push({ pos: [], meanings: [], example: '', source: '' }); renderEditModal(); };
 
-        // AI 造句 (抓取當下輸入框的單字)
         window.aiGenExample = async (idx) => {
             const currentWord = document.getElementById('editWordInput').value.trim();
             if (!currentWord) return alert('請先在上方輸入英文單字！');
@@ -413,52 +478,33 @@
             } catch(err) { alert('失敗'); document.getElementById(`ex-${idx}`).value = def.example; }
         };
 
-        // 儲存/新增邏輯
         document.getElementById('btnSaveEdit').onclick = async () => {
             const newWord = document.getElementById('editWordInput').value.trim();
             if (!newWord) return alert('⚠️ 英文單字不能為空！');
-
-            // 檢查是否沒有任何中文意思
             const hasMeaning = editCardData.definitions.some(def => def.meanings.length > 0);
             if (!hasMeaning) return alert('⚠️ 請至少輸入一個中文意思！');
 
-            // 檢查重複 (新增模式，或者修改了拼字時才檢查)
+            let allCards = Object.values(allCardsData);
             if (!isEditMode || (isEditMode && newWord.toLowerCase() !== editCardData.english.toLowerCase())) {
-                if (currentCards.find(c => c.english.toLowerCase() === newWord.toLowerCase())) {
+                if (allCards.find(c => c.english.toLowerCase() === newWord.toLowerCase() && c.deck === currentDeck)) {
                     return alert('⚠️ 此單字已經存在於目前字庫中了！');
                 }
             }
 
             editCardData.english = newWord;
-            document.getElementById('btnSaveEdit').innerText = "寫入中...";
-            document.getElementById('btnSaveEdit').disabled = true;
+            document.getElementById('btnSaveEdit').innerText = "寫入中..."; document.getElementById('btnSaveEdit').disabled = true;
 
             try {
                 if (isEditMode) {
-                    await update(ref(db, `cards/${username}/${editCardData.id}`), { 
-                        english: editCardData.english,
-                        definitions: editCardData.definitions, 
-                        chinese: null, pos: null 
-                    });
-                    await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `更新單字結構: ${editCardData.english}` });
+                    await update(ref(db, `cards/${username}/${editCardData.id}`), { english: editCardData.english, definitions: editCardData.definitions, chinese: null, pos: null });
+                    await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: editCardData.deck, type: '資訊編輯', remarks: `更新單字結構: ${editCardData.english}` });
                 } else {
-                    await push(ref(db, `cards/${username}`), {
-                        username: username, 
-                        deck: currentDeck, 
-                        english: editCardData.english, 
-                        definitions: editCardData.definitions, 
-                        is_difficult: 'false', 
-                        is_important: 'false', 
-                        timestamp: Date.now()
-                    });
+                    await push(ref(db, `cards/${username}`), { username: username, deck: currentDeck, english: editCardData.english, definitions: editCardData.definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now() });
                     await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `手動新增: ${editCardData.english}` });
                 }
                 document.getElementById('editModal').style.display = 'none';
-            } catch (err) {
-                alert('寫入失敗');
-            } finally {
-                document.getElementById('btnSaveEdit').innerText = "💾 儲存修改";
-                document.getElementById('btnSaveEdit').disabled = false;
+            } catch (err) { alert('寫入失敗'); } finally {
+                document.getElementById('btnSaveEdit').innerText = "💾 儲存寫入"; document.getElementById('btnSaveEdit').disabled = false;
             }
         };
 
@@ -472,10 +518,10 @@
             const rows = raw.split('\n');
             const progress = document.getElementById('excelProgress');
             let successCount = 0; let skipCount = 0;
+            let allCards = Object.values(allCardsData);
             
             document.getElementById('btnExecExcelImport').disabled = true;
-            progress.innerText = '高速寫入資料庫中...';
-            progress.style.color = 'var(--neon-yellow)';
+            progress.innerText = '高速寫入資料庫中...'; progress.style.color = 'var(--neon-yellow)';
 
             for (let row of rows) {
                 const cols = row.split('\t');
@@ -487,7 +533,7 @@
                 const word = cols[0].trim(); const meaningStr = cols[1].trim();
                 if (!word || !meaningStr) continue;
 
-                if (currentCards.find(c => c.english.toLowerCase() === word.toLowerCase())) { skipCount++; continue; }
+                if (allCards.find(c => c.english.toLowerCase() === word.toLowerCase() && c.deck === currentDeck)) { skipCount++; continue; }
 
                 const posStr = cols.length > 2 ? cols[2].trim() : '';
                 const exStr = cols.length > 3 ? cols[3].trim() : '';
@@ -495,20 +541,14 @@
 
                 const definitions = [{ pos: posStr ? [posStr] : [], meanings: [meaningStr], example: exStr, source: srcStr }];
 
-                await push(ref(db, `cards/${username}`), {
-                    username: username, deck: currentDeck, english: word, 
-                    definitions: definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now()
-                });
+                await push(ref(db, `cards/${username}`), { username: username, deck: currentDeck, english: word, definitions: definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now() });
                 successCount++;
             }
             
             if (successCount > 0) { await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `Excel 批量匯入了 ${successCount} 個單字` }); }
 
-            progress.innerText = `✅ 匯入完成！成功: ${successCount} 筆，略過重複/無效: ${skipCount} 筆`;
-            progress.style.color = 'var(--neon-green)';
-            document.getElementById('excelInput').value = '';
-            document.getElementById('btnExecExcelImport').disabled = false;
-            
+            progress.innerText = `✅ 匯入完成！成功: ${successCount} 筆，略過重複/無效: ${skipCount} 筆`; progress.style.color = 'var(--neon-green)';
+            document.getElementById('excelInput').value = ''; document.getElementById('btnExecExcelImport').disabled = false;
             setTimeout(() => { document.getElementById('excelModal').style.display = 'none'; progress.innerText = ''; }, 3500);
         };
 
@@ -538,75 +578,50 @@
             const apiKey = await fetchApiKey(); if (!apiKey) return;
             const pArea = document.getElementById('progressArea'), sList = document.getElementById('statusList');
             pArea.style.display = 'block'; sList.innerHTML = '';
-            let total = wordsToProcess.length, completed = 0;
+            let total = wordsToProcess.length, completed = 0; let allCards = Object.values(allCardsData);
             document.getElementById('progressBarFill').style.width = '0%'; document.getElementById('progressCountText').innerText = `0 / ${total}`;
 
             wordsToProcess.forEach(w => { sList.innerHTML += `<div class="status-item" id="st-${w}">${w}: 等待中...</div>`; });
 
             for (let i = 0; i < wordsToProcess.length; i++) {
                 let w = wordsToProcess[i], el = document.getElementById(`st-${w}`);
-                if (currentCards.find(c => c.english.toLowerCase() === w.toLowerCase())) {
+                if (allCards.find(c => c.english.toLowerCase() === w.toLowerCase() && c.deck === currentDeck)) {
                     el.innerHTML = `${w}: ⚠️ 已存在`; el.className = 'status-item status-done';
                     waitingList = waitingList.filter(item => item !== w); 
                 } else {
                     el.innerHTML = `${w}: 🤖 分析中...`; el.style.color = 'var(--neon-cyan)';
                     try {
-                        const promptText = `請分析英文單字「${w}」。
-                        輸出純 JSON，格式必須為：
-                        {"corrected_word": "${w}", "definitions": [{"pos": ["n.", "v."], "meanings": ["意思1", "意思2"], "example": "", "source": ""}]}`;
-                        
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-                        });
-                        
+                        const promptText = `請分析英文單字「${w}」。輸出純 JSON，格式必須為：{"corrected_word": "${w}", "definitions": [{"pos": ["n.", "v."], "meanings": ["意思1", "意思2"], "example": "", "source": ""}]}`;
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
                         if (!res.ok) throw new Error(res.status);
-                        const rawText = (await res.json()).candidates[0].content.parts[0].text;
-                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                        const jsonMatch = (await res.json()).candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/);
                         if (!jsonMatch) throw new Error('FormatErr');
                         
                         const result = JSON.parse(jsonMatch[0]);
-                        await push(ref(db, `cards/${username}`), {
-                            username: username, deck: currentDeck, english: result.corrected_word, definitions: result.definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now()
-                        });
+                        await push(ref(db, `cards/${username}`), { username: username, deck: currentDeck, english: result.corrected_word, definitions: result.definitions, is_difficult: 'false', is_important: 'false', timestamp: Date.now() });
                         await push(ref(db, `logs/${username}`), { timestamp: Date.now(), durationMs: 0, deck: currentDeck, type: '資訊編輯', remarks: `新增單字: ${result.corrected_word}` });
                         el.innerHTML = `${w}: ✅ 完成`; el.className = 'status-item status-done';
-                        
                         waitingList = waitingList.filter(item => item !== w);
                     } catch (err) { 
                         el.innerHTML = `${w}: ❌ 失敗 (加入等待清單)`; el.className = 'status-item status-error'; 
                         if(!waitingList.includes(w)) waitingList.push(w);
                     }
                 }
-                updateWaitlistUI();
-                completed++;
-                document.getElementById('progressBarFill').style.width = `${(completed/total)*100}%`;
-                document.getElementById('progressCountText').innerText = `${completed} / ${total}`;
+                updateWaitlistUI(); completed++;
+                document.getElementById('progressBarFill').style.width = `${(completed/total)*100}%`; document.getElementById('progressCountText').innerText = `${completed} / ${total}`;
                 if (i < wordsToProcess.length - 1) await new Promise(r => setTimeout(r, 2000));
             }
         }
 
         document.getElementById('wordInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btnBulkAdd').click(); }});
-        document.getElementById('btnBulkAdd').onclick = () => {
-            const raw = document.getElementById('wordInput').value.trim(); if (!raw) return;
-            const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; document.getElementById('wordInput').value = '';
-            processWords(words);
-        };
-        document.getElementById('btnRetryWaitlist').onclick = () => {
-            if(waitingList.length === 0) return;
-            const wordsToRetry = [...waitingList];
-            processWords(wordsToRetry);
-        };
+        document.getElementById('btnBulkAdd').onclick = () => { const raw = document.getElementById('wordInput').value.trim(); if (!raw) return; const words = [...new Set(raw.split(/[,，\s\n]+/).filter(w => w.length > 1))]; document.getElementById('wordInput').value = ''; processWords(words); };
+        document.getElementById('btnRetryWaitlist').onclick = () => { if(waitingList.length === 0) return; processWords([...waitingList]); };
 
-        // 導航
         document.getElementById('btnBackToDash').onclick = () => { window.location.href = 'index.html'; };
         document.querySelectorAll('.btn-mode').forEach(btn => {
             btn.onclick = (e) => {
                 localStorage.setItem('fc_study_filter', filterMode); localStorage.setItem('fc_study_deck', currentDeck); 
-                let targetMode = 'flashcard';
-                if(e.target.id === 'btnQuizMode') targetMode = 'quiz';
-                if(e.target.id === 'btnMcqMode') targetMode = 'mcq';
-                window.location.href = `study.html?mode=${targetMode}`;
+                let targetMode = 'flashcard'; if(e.target.id === 'btnQuizMode') targetMode = 'quiz'; if(e.target.id === 'btnMcqMode') targetMode = 'mcq'; window.location.href = `study.html?mode=${targetMode}`;
             }
         });
     </script>
