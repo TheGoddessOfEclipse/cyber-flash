@@ -91,7 +91,6 @@
         </div>
     </div>
 
-    <!-- ✨ 新建單字集 Modal ✨ -->
     <div id="createDeckModal" class="modal">
         <div class="modal-content">
             <button class="close-btn" id="closeCreateModal">&times;</button>
@@ -118,13 +117,33 @@
 
                 <div style="margin-top: 15px; font-size: 13px; color: #aaa;">吸收來源 (可複選)：</div>
                 <div id="advSourceList" style="margin-top: 5px; max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.5);">
-                    <!-- 動態載入一般單字表 -->
-                </div>
+                    </div>
 
                 <div style="margin-top: 10px; font-size: 11px; color: #888;">* 建立後預設開啟【同步功能】，來源狀態改變會自動更新此進階表。</div>
-
                 <button class="btn-secondary" style="margin-top: 15px; width: 100%; border-color: var(--neon-purple); color: var(--neon-purple);" id="btnCreateAdv">建立進階卡集</button>
             </div>
+        </div>
+    </div>
+
+    <div id="editAdvDeckModal" class="modal">
+        <div class="modal-content" style="border-top-color: var(--neon-purple); border-color: var(--neon-purple);">
+            <button class="close-btn" id="closeEditAdvModal">&times;</button>
+            <h3 style="color: var(--neon-purple); margin-top: 0; margin-bottom: 20px; text-shadow: 0 0 10px rgba(176,38,255,0.4);">⚙️ 設定進階單字集</h3>
+            
+            <input type="text" id="editAdvDeckName" placeholder="節點名稱" style="color: #fff; border-color: var(--neon-purple);">
+            
+            <div style="margin-top: 15px; font-size: 13px; color: #aaa;">目標吸收狀態：</div>
+            <select id="editAdvTargetStatus" style="border-color: var(--neon-purple); color: #fff; margin-top: 5px;">
+                <option value="is_difficult">⚠️ 吸收【未精熟】單字</option>
+                <option value="is_important">✅ 吸收【已精熟】單字</option>
+            </select>
+
+            <div style="margin-top: 15px; font-size: 13px; color: #aaa;">變更吸收來源 (可多選)：</div>
+            <div id="editAdvSourceList" style="margin-top: 5px; max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.5);">
+            </div>
+
+            <div style="margin-top: 10px; font-size: 11px; color: var(--neon-green);">* 儲存設定後，系統將自動套用新來源並確保處於【同步模式】。</div>
+            <button class="btn-secondary" style="margin-top: 15px; width: 100%; border-color: var(--neon-purple); background: var(--neon-purple); color: #fff; text-shadow: none;" id="btnSaveAdvEdit">💾 儲存設定</button>
         </div>
     </div>
 
@@ -173,12 +192,13 @@
 
         document.getElementById('btnLogout').onclick = () => { localStorage.removeItem('fc_username'); currentUser = ''; switchView('authView'); };
 
-        // 🌟 Modal 切換邏輯
-        document.getElementById('btnOpenCreateModal').onclick = () => {
-            document.getElementById('createDeckModal').style.display = 'flex';
-        };
+        // Modal 切換邏輯
+        document.getElementById('btnOpenCreateModal').onclick = () => document.getElementById('createDeckModal').style.display = 'flex';
         document.getElementById('closeCreateModal').onclick = () => document.getElementById('createDeckModal').style.display = 'none';
         
+        // 編輯進階單字集 Modal 關閉
+        document.getElementById('closeEditAdvModal').onclick = () => document.getElementById('editAdvDeckModal').style.display = 'none';
+
         document.getElementById('tabRegDeck').onclick = () => {
             document.getElementById('tabRegDeck').className = 'btn-tab active';
             document.getElementById('tabAdvDeck').className = 'btn-tab';
@@ -192,7 +212,7 @@
             document.getElementById('advDeckForm').style.display = 'block';
         };
 
-        // 🌟 建立單字集邏輯
+        // 建立單字集邏輯
         document.getElementById('btnCreateReg').onclick = () => {
             const name = document.getElementById('newRegDeckName').value.trim(); if (!name) return;
             document.getElementById('createDeckModal').style.display = 'none';
@@ -221,6 +241,41 @@
             localStorage.setItem('fc_current_deck', name); window.location.href = 'deck.html';
         };
 
+        // 儲存進階單字集編輯設定
+        document.getElementById('btnSaveAdvEdit').onclick = async () => {
+            const oldName = document.getElementById('editAdvDeckName').dataset.oldName;
+            const newName = document.getElementById('editAdvDeckName').value.trim();
+            const targetStatus = document.getElementById('editAdvTargetStatus').value;
+            const checkboxes = document.querySelectorAll('.edit-source-cb:checked');
+            const sources = Array.from(checkboxes).map(cb => cb.value);
+
+            if (!newName) return alert('名稱不可為空');
+            if (sources.length === 0) return alert('請至少勾選一個來源');
+
+            showLoading('🔄 更新設定中...');
+            
+            const snap = await get(ref(db, `deck_settings/${currentUser}/${oldName}`));
+            let existingSettings = snap.exists() ? snap.val() : { type: 'advanced' };
+            
+            // 強制更新設定並自動恢復同步狀態
+            existingSettings.sources = sources;
+            existingSettings.targetStatus = targetStatus;
+            existingSettings.sync = true; 
+            existingSettings.staticIds = null; 
+
+            const updates = {};
+            if (newName !== oldName) {
+                updates[`deck_settings/${currentUser}/${newName}`] = existingSettings;
+                updates[`deck_settings/${currentUser}/${oldName}`] = null;
+            } else {
+                updates[`deck_settings/${currentUser}/${oldName}`] = existingSettings;
+            }
+            
+            await update(ref(db), updates);
+            document.getElementById('editAdvDeckModal').style.display = 'none';
+            loadDashboard(currentUser);
+        };
+
         async function loadDashboard(user) {
             showLoading('下載數據...');
             const [cardsSnap, settingsSnap] = await Promise.all([ get(ref(db, `cards/${user}`)), get(ref(db, `deck_settings/${user}`)) ]);
@@ -228,18 +283,15 @@
             const allCards = cardsSnap.exists() ? cardsSnap.val() : {};
             const allSettings = settingsSnap.exists() ? settingsSnap.val() : {};
             
-            // 找出所有一般單字集
             const regDecks = [...new Set(Object.values(allCards).map(c => c.deck))];
-            // 找出所有進階單字集
             const advDecks = Object.keys(allSettings).filter(k => allSettings[k].type === 'advanced');
             
             const allDeckNames = [...new Set([...regDecks, ...advDecks])];
             const grid = document.getElementById('deckGrid'); grid.innerHTML = '';
             
-            // 更新進階單字集 Modal 的來源選單
             const sourceListEl = document.getElementById('advSourceList');
             sourceListEl.innerHTML = regDecks.length > 0 
-                ? regDecks.map(d => `<label style="display:block; color:#fff; cursor:pointer;"><input type="checkbox" class="source-cb" value="${d}"> ${d}</label>`).join('')
+                ? regDecks.map(d => `<label style="display:block; color:#fff; cursor:pointer; margin-bottom:5px;"><input type="checkbox" class="source-cb" value="${d}"> ${d}</label>`).join('')
                 : '<div style="color:#f44;">尚未擁有一般單字集，無法建立進階表。</div>';
 
             if (allDeckNames.length === 0) {
@@ -280,24 +332,39 @@
                     actionsDiv.className = 'deck-actions';
                     actionsDiv.onclick = (e) => e.stopPropagation();
 
-                    // 改名
-                    const btnRename = document.createElement('button'); btnRename.className = 'deck-action-btn'; btnRename.innerText = '✏️改名';
-                    btnRename.onclick = async () => {
-                        const newName = prompt('請輸入新的單字表名稱：', deckName);
-                        if(!newName || newName === deckName) return;
-                        showLoading('🔄 更新中...');
-                        const updates = {};
-                        if (isAdvanced) {
-                            updates[`deck_settings/${user}/${newName}`] = allSettings[deckName];
-                            updates[`deck_settings/${user}/${deckName}`] = null;
-                        } else {
+                    if (isAdvanced) {
+                        // ✨ 進階單字表專屬：設定鈕
+                        const btnSettings = document.createElement('button'); btnSettings.className = 'deck-action-btn'; btnSettings.innerText = '⚙️設定';
+                        btnSettings.onclick = (e) => {
+                            e.stopPropagation();
+                            document.getElementById('editAdvDeckName').value = deckName;
+                            document.getElementById('editAdvDeckName').dataset.oldName = deckName;
+                            document.getElementById('editAdvTargetStatus').value = allSettings[deckName].targetStatus || 'is_difficult';
+                            
+                            const editSourceListEl = document.getElementById('editAdvSourceList');
+                            editSourceListEl.innerHTML = regDecks.length > 0 
+                                ? regDecks.map(d => `<label style="display:block; color:#fff; cursor:pointer; margin-bottom:5px;"><input type="checkbox" class="edit-source-cb" value="${d}" ${(allSettings[deckName].sources||[]).includes(d) ? 'checked' : ''}> ${d}</label>`).join('')
+                                : '<div style="color:#f44;">沒有可用的一般單字集。</div>';
+                            
+                            document.getElementById('editAdvDeckModal').style.display = 'flex';
+                        };
+                        actionsDiv.appendChild(btnSettings);
+                    } else {
+                        // 一般單字表專屬：改名鈕
+                        const btnRename = document.createElement('button'); btnRename.className = 'deck-action-btn'; btnRename.innerText = '✏️改名';
+                        btnRename.onclick = async () => {
+                            const newName = prompt('請輸入新的單字表名稱：', deckName);
+                            if(!newName || newName === deckName) return;
+                            showLoading('🔄 更新中...');
+                            const updates = {};
                             Object.entries(allCards).filter(([id, c]) => c.deck === deckName).forEach(([id, c]) => { updates[`cards/${user}/${id}/deck`] = newName; });
                             if(allSettings[deckName]) { updates[`deck_settings/${user}/${newName}`] = allSettings[deckName]; updates[`deck_settings/${user}/${deckName}`] = null; }
-                        }
-                        await update(ref(db), updates); loadDashboard(user);
-                    };
+                            await update(ref(db), updates); loadDashboard(user);
+                        };
+                        actionsDiv.appendChild(btnRename);
+                    }
 
-                    // 複製
+                    // 複製 (共用)
                     const btnCopy = document.createElement('button'); btnCopy.className = 'deck-action-btn'; btnCopy.innerText = '📄複製';
                     btnCopy.onclick = async () => {
                         const newName = prompt('請輸入複製後的單字表名稱：', deckName + '_複製');
@@ -315,8 +382,9 @@
                         }
                         await update(ref(db), updates); loadDashboard(user);
                     };
+                    actionsDiv.appendChild(btnCopy);
 
-                    // 整合 (進階單字表不允許整合)
+                    // 整合 (一般單字表專屬)
                     if (!isAdvanced) {
                         const btnMerge = document.createElement('button'); btnMerge.className = 'deck-action-btn'; btnMerge.innerText = '🔗整合';
                         btnMerge.onclick = async () => {
@@ -333,7 +401,7 @@
                         actionsDiv.appendChild(btnMerge);
                     }
 
-                    // 刪除
+                    // 刪除 (共用)
                     const btnDelete = document.createElement('button'); btnDelete.className = 'deck-action-btn del'; btnDelete.innerText = '🗑️刪除';
                     btnDelete.onclick = async () => {
                         if (isAdvanced) {
@@ -350,15 +418,13 @@
                             await update(ref(db), updates); loadDashboard(user);
                         }
                     };
-
-                    actionsDiv.prepend(btnRename, btnCopy);
                     actionsDiv.appendChild(btnDelete);
+
                     cardEl.appendChild(actionsDiv);
                     grid.appendChild(cardEl);
                 });
             }
             
-            // 圖表渲染
             const logSnap = await get(ref(db, `logs/${user}`));
             if(logSnap.exists()) {
                 const logs = Object.values(logSnap.val());
