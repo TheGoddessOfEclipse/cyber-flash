@@ -95,7 +95,6 @@
                 <button class="btn-tab" id="tabImp">✅ 已精熟</button>
             </div>
 
-            <!-- 一般單字集的新增區塊 -->
             <div id="inputSection">
                 <div style="font-size: 12px; color: #888; margin-bottom: 5px; margin-top: 10px;">[ 注入數據 ]</div>
                 <textarea id="wordInput" placeholder="輸入單字交給 AI 幫你找意思...&#10;(按 Enter 直接送出)"></textarea>
@@ -106,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- ✨ 進階單字集的同步控制區塊 ✨ -->
             <div id="syncControlPanel" style="display:none; padding:15px 10px; border:1px solid var(--neon-purple); border-radius:4px; margin-top:10px; background:rgba(176, 38, 255, 0.1);">
                 <div style="color:var(--neon-purple); font-weight:bold; font-size:14px; margin-bottom:10px; text-align:center;">🟣 階層二同步系統</div>
                 <button id="btnToggleSync" class="btn-action" style="width:100%; padding: 10px; font-size: 13px;"></button>
@@ -143,7 +141,6 @@
         </div>
     </div>
 
-    <!-- 編輯/新增共用 Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <button class="close-btn" id="closeEditModal">&times;</button>
@@ -162,7 +159,6 @@
         </div>
     </div>
 
-    <!-- Excel 批量匯入 Modal -->
     <div id="excelModal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <button class="close-btn" id="closeExcelModal">&times;</button>
@@ -226,7 +222,6 @@
 
         if (!username || !currentDeck) window.location.href = 'index.html';
         
-        // 🌟 雙重監聽：單字資料與設定檔
         onValue(ref(db, `deck_settings/${username}/${currentDeck}`), (snap) => {
             deckSettingsData = snap.val() || null;
             isSettingsLoaded = true;
@@ -263,12 +258,10 @@
             renderCards();
         }
 
-        // 🌟 核心：根據節點類型過濾卡片
         function processCards() {
             let all = Object.entries(allCardsData).map(([id, val]) => ({ id, ...val }));
             
             if (deckSettingsData && deckSettingsData.type === 'advanced') {
-                // 進階單字表 UI 切換
                 document.getElementById('inputSection').style.display = 'none';
                 document.getElementById('syncControlPanel').style.display = 'block';
                 document.getElementById('leftPanelBox').classList.add('advanced');
@@ -282,12 +275,10 @@
                 if (isSync) {
                     syncBtn.innerText = '🔄 目前狀態：已開啟動態同步 (點擊凍結)';
                     syncBtn.style.color = 'var(--neon-green)'; syncBtn.style.borderColor = 'var(--neon-green)';
-                    // 過濾出符合條件的單字
                     currentCards = all.filter(c => (deckSettingsData.sources || []).includes(c.deck) && String(c[deckSettingsData.targetStatus]).toLowerCase() === 'true');
                 } else {
                     syncBtn.innerText = '❄️ 目前狀態：已凍結同步 (點擊解凍)';
                     syncBtn.style.color = '#888'; syncBtn.style.borderColor = '#888';
-                    // 只顯示當初凍結時記錄的卡片 ID
                     const sIds = deckSettingsData.staticIds || [];
                     currentCards = all.filter(c => sIds.includes(c.id));
                 }
@@ -305,7 +296,6 @@
                     }
                 };
             } else {
-                // 一般單字表
                 document.getElementById('inputSection').style.display = 'block';
                 document.getElementById('syncControlPanel').style.display = 'none';
                 document.getElementById('leftPanelBox').classList.remove('advanced');
@@ -368,7 +358,6 @@
                     backHtml = `<div style="color: var(--neon-cyan);"><span style="color: var(--neon-pink);">${card.pos||''}</span> ${card.chinese}</div>`;
                 }
 
-                // 若為進階模式，顯示單字的真實來源節點
                 const isAdvancedDeck = deckSettingsData && deckSettingsData.type === 'advanced';
                 const sourceBadge = isAdvancedDeck ? `<div style="position:absolute; top:10px; left:10px; font-size:10px; color:#aaa; border:1px solid #555; padding:2px 5px; border-radius:3px;">來源: ${card.deck}</div>` : '';
 
@@ -399,7 +388,7 @@
             });
         }
 
-        // ================= 動態編輯器 (新增/編輯雙用) =================
+        // ================= ✨ 動態編輯器 (防呆修復版) ✨ =================
         let editCardData = null;
         let isEditMode = true; 
 
@@ -410,7 +399,20 @@
             if (card) {
                 isEditMode = true;
                 editCardData = JSON.parse(JSON.stringify(card));
-                if (!editCardData.definitions) { editCardData.definitions = [{ pos: [card.pos || ''], meanings: [card.chinese ? card.chinese.replace(/<br>/g, ' ') : ''], example: '', source: '' }]; }
+                // ✨ 安全修復機制：自動將舊的單字卡轉為 Array 格式，避免 .map 報錯
+                if (!editCardData.definitions) { 
+                    editCardData.definitions = [{ 
+                        pos: card.pos ? [card.pos] : [], 
+                        meanings: card.chinese ? [card.chinese.replace(/<br>/g, ' ')] : [], 
+                        example: '', 
+                        source: '' 
+                    }]; 
+                } else {
+                    editCardData.definitions.forEach(def => {
+                        if (!Array.isArray(def.pos)) def.pos = def.pos ? [def.pos] : [];
+                        if (!Array.isArray(def.meanings)) def.meanings = def.meanings ? [def.meanings] : (def.chinese ? [def.chinese.replace(/<br>/g, ' ')] : []);
+                    });
+                }
                 document.getElementById('editModalTitle').innerText = '✏️ 編輯單字';
             } else {
                 isEditMode = false;
@@ -426,18 +428,26 @@
         function renderEditModal() {
             const container = document.getElementById('editDefinitionsContainer');
             container.innerHTML = '';
-            editCardData.definitions.forEach((def, index) => {
+            
+            // 安全載入
+            const definitions = editCardData.definitions || [{ pos: [], meanings: [], example: '', source: '' }];
+
+            definitions.forEach((def, index) => {
                 const block = document.createElement('div'); block.className = 'edit-block';
+                
+                const posList = Array.isArray(def.pos) ? def.pos : (def.pos ? [def.pos] : []);
+                const meaningList = Array.isArray(def.meanings) ? def.meanings : (def.chinese ? [def.chinese.replace(/<br>/g, ' ')] : []);
+
                 block.innerHTML = `
                     <button class="action-icon" style="position: absolute; top: 10px; right: 10px; color: #f44; border-color: #f44;" onclick="removeBlock(${index})">🗑️ 刪除區塊</button>
                     <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">詞性 (PoS):</div>
                     <div class="edit-input-group" id="posGroup-${index}">
-                        ${def.pos.map((p, i) => `<span class="tag-input">${p} <span style="cursor:pointer; margin-left:5px;" onclick="removePos(${index}, ${i})">x</span></span>`).join('')}
+                        ${posList.map((p, i) => `<span class="tag-input">${p} <span style="cursor:pointer; margin-left:5px;" onclick="removePos(${index}, ${i})">x</span></span>`).join('')}
                         <button class="btn-action" style="border: 1px solid var(--neon-pink); color: var(--neon-pink);" onclick="addPos(${index})">+ 新增詞性</button>
                     </div>
                     <div style="font-size: 12px; color: #aaa; margin-top: 10px; margin-bottom: 5px;">中文意思:</div>
                     <div class="edit-input-group" id="meanGroup-${index}">
-                        ${def.meanings.map((m, i) => `<span class="tag-input" style="border-color: var(--neon-cyan); background: rgba(0,255,255,0.1);">${m} <span style="cursor:pointer; margin-left:5px;" onclick="removeMean(${index}, ${i})">x</span></span>`).join('')}
+                        ${meaningList.map((m, i) => `<span class="tag-input" style="border-color: var(--neon-cyan); background: rgba(0,255,255,0.1);">${m} <span style="cursor:pointer; margin-left:5px;" onclick="removeMean(${index}, ${i})">x</span></span>`).join('')}
                         <button class="btn-action" style="border: 1px solid var(--neon-cyan); color: var(--neon-cyan);" onclick="addMean(${index})">+ 新增中文</button>
                     </div>
                     <div style="margin-top: 10px;">
@@ -445,9 +455,9 @@
                             <span style="font-size: 12px; color: #aaa;">例句 (Example):</span>
                             <button class="btn-action" style="border: 1px solid var(--neon-green); color: var(--neon-green);" onclick="aiGenExample(${index})">🤖 AI 造句</button>
                         </div>
-                        <textarea id="ex-${index}" style="height: 50px; font-size: 13px;" onchange="updateEx(${index}, this.value)">${def.example}</textarea>
+                        <textarea id="ex-${index}" style="height: 50px; font-size: 13px;" onchange="updateEx(${index}, this.value)">${def.example || ''}</textarea>
                     </div>
-                    <div style="margin-top: 10px;"><span style="font-size: 12px; color: #aaa;">出處:</span> <input type="text" id="src-${index}" value="${def.source}" style="padding: 5px; font-size: 13px;" onchange="updateSrc(${index}, this.value)"></div>
+                    <div style="margin-top: 10px;"><span style="font-size: 12px; color: #aaa;">出處:</span> <input type="text" id="src-${index}" value="${def.source || ''}" style="padding: 5px; font-size: 13px;" onchange="updateSrc(${index}, this.value)"></div>
                 `;
                 container.appendChild(block);
             });
@@ -475,7 +485,7 @@
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
                 const txt = (await res.json()).candidates[0].content.parts[0].text; editCardData.definitions[idx].example = txt.trim(); renderEditModal();
-            } catch(err) { alert('失敗'); document.getElementById(`ex-${idx}`).value = def.example; }
+            } catch(err) { alert('失敗'); document.getElementById(`ex-${idx}`).value = def.example || ''; }
         };
 
         document.getElementById('btnSaveEdit').onclick = async () => {
